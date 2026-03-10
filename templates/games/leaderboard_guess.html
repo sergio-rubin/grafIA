@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ranking — grafIA Guess{% endblock %}
+
+{% block content %}
+<div class="leaderboard-container">
+    <div class="leaderboard-header">
+        <h1 class="leaderboard-title">
+            <span class="title-icon">🧠</span>
+            Ranking — grafIA <span class="accent">Guess</span>
+        </h1>
+        <p class="leaderboard-subtitle">Los mejores adivinadores de funciones</p>
+    </div>
+    
+    <div class="leaderboard-tabs">
+        <a href="{% url 'games:leaderboard_learn' %}" class="tab">Learn</a>
+        <a href="{% url 'games:leaderboard_guess' %}" class="tab active">Guess</a>
+    </div>
+    
+    <div class="leaderboard-table-container">
+        <table class="leaderboard-table" id="leaderboardTable">
+            <thead>
+                <tr>
+                    <th class="col-rank">#</th>
+                    <th class="col-name">Jugador</th>
+                    <th class="col-score">Score</th>
+                    <th class="col-time">Tiempo</th>
+                    <th class="col-precision">Precisión</th>
+                    <th class="col-date">Fecha</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody">
+                {% if scores %}
+                    {% for score in scores %}
+                    <tr class="{% if forloop.counter <= 3 %}top-three rank-{{ forloop.counter }}{% endif %}">
+                        <td class="col-rank">
+                            {% if forloop.counter == 1 %}🥇
+                            {% elif forloop.counter == 2 %}🥈
+                            {% elif forloop.counter == 3 %}🥉
+                            {% else %}{{ forloop.counter }}
+                            {% endif %}
+                        </td>
+                        <td class="col-name">{{ score.player_name }}</td>
+                        <td class="col-score">{{ score.score }}</td>
+                        <td class="col-time">{{ score.time_seconds|floatformat:1 }}s</td>
+                        <td class="col-precision">{{ score.precision|floatformat:1 }}%</td>
+                        <td class="col-date">{{ score.created_at|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr class="empty-row">
+                        <td colspan="6">No hay puntuaciones todavía. ¡Sé el primero!</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="leaderboard-actions">
+        <a href="{% url 'games:guess' %}" class="btn btn-primary">Jugar grafIA Guess</a>
+        <a href="{% url 'games:landing' %}" class="btn btn-outline">Volver al inicio</a>
+    </div>
+    
+    <div class="auto-refresh-indicator">
+        <span class="pulse"></span>
+        <span>Actualización automática activa</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    async function refreshLeaderboard() {
+        try {
+            const response = await fetch('/api/leaderboard/guess/');
+            const data = await response.json();
+            
+            const tbody = document.getElementById('leaderboardBody');
+            
+            if (data.scores && data.scores.length > 0) {
+                tbody.innerHTML = data.scores.map((score, index) => {
+                    const rank = index + 1;
+                    let rankDisplay = rank;
+                    if (rank === 1) rankDisplay = '🥇';
+                    else if (rank === 2) rankDisplay = '🥈';
+                    else if (rank === 3) rankDisplay = '🥉';
+                    
+                    const topClass = rank <= 3 ? `top-three rank-${rank}` : '';
+                    
+                    return `
+                        <tr class="${topClass}">
+                            <td class="col-rank">${rankDisplay}</td>
+                            <td class="col-name">${score.player_name}</td>
+                            <td class="col-score">${score.score}</td>
+                            <td class="col-time">${score.time_seconds.toFixed(1)}s</td>
+                            <td class="col-precision">${(score.precision * 100).toFixed(1)}%</td>
+                            <td class="col-date">${score.date}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } else {
+                tbody.innerHTML = `
+                    <tr class="empty-row">
+                        <td colspan="6">No hay puntuaciones todavía. ¡Sé el primero!</td>
+                    </tr>
+                `;
+            }
+        } catch (err) {
+            console.error('Error refreshing leaderboard:', err);
+        }
+    }
+    
+    // Refresh every 5 seconds
+    setInterval(refreshLeaderboard, 5000);
+})();
+</script>
+{% endblock %}

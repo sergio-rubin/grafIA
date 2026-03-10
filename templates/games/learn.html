@@ -1,0 +1,1181 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}grafIA Learn — Dibuja y Aprende{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analysis-status {
+        position: absolute;
+        top: 15px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(10, 10, 26, 0.9);
+        border: 1px solid #00ffaa;
+        border-radius: 8px;
+        padding: 8px 20px;
+        color: #00ffaa;
+        font-size: 0.9rem;
+        font-weight: 600;
+        z-index: 10;
+        display: none;
+        animation: pulse-glow 1s ease-in-out infinite;
+    }
+    
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
+        50% { box-shadow: 0 0 20px rgba(0, 255, 170, 0.6); }
+    }
+    
+    .function-result-box {
+        background: linear-gradient(135deg, rgba(10, 10, 26, 0.95), rgba(26, 26, 58, 0.95));
+        border: 2px solid #ff6b9d;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        text-align: center;
+        box-shadow: 0 0 30px rgba(255, 107, 157, 0.2);
+    }
+    
+    .function-result-label {
+        display: block;
+        color: #a0a0c0;
+        font-size: 0.875rem;
+        margin-bottom: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .function-result-value {
+        font-family: 'Courier New', monospace;
+        font-size: 1.25rem;
+        color: #ff6b9d;
+        font-weight: 700;
+        word-break: break-all;
+        line-height: 1.6;
+    }
+    
+    .curve-legend {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin: 1rem 0;
+        padding: 0.75rem;
+        background: rgba(10, 10, 26, 0.5);
+        border-radius: 8px;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+        color: #a0a0c0;
+    }
+    
+    .legend-dot {
+        width: 20px;
+        height: 4px;
+        border-radius: 2px;
+    }
+    
+    .legend-dot.user {
+        background: #00ffaa;
+    }
+    
+    .legend-dot.ai {
+        background: #ff6b9d;
+    }
+    
+    .save-score-form {
+        background: rgba(26, 26, 58, 0.5);
+        border: 1px solid rgba(100, 200, 255, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .save-score-form h3 {
+        color: #00ffaa;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .geogebra-hint {
+        font-size: 0.8rem;
+        color: #a0a0c0;
+        margin-top: 0.5rem;
+        font-style: italic;
+    }
+    
+    .canvas-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+    
+    /* Explanation Section */
+    .explanation-section {
+        margin-top: 4rem;
+        padding-top: 3rem;
+        border-top: 1px solid rgba(100, 200, 255, 0.2);
+    }
+    
+    .explanation-title {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: #fff;
+    }
+    
+    .explanation-title .accent {
+        color: #00ffaa;
+    }
+    
+    .explanation-subtitle {
+        text-align: center;
+        color: #a0a0c0;
+        margin-bottom: 3rem;
+        font-size: 1.1rem;
+    }
+    
+    .explanation-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .explanation-card {
+        background: linear-gradient(135deg, rgba(26, 26, 58, 0.8), rgba(10, 10, 26, 0.9));
+        border: 1px solid rgba(100, 200, 255, 0.2);
+        border-radius: 16px;
+        padding: 1.5rem;
+        transition: transform 0.3s, border-color 0.3s;
+    }
+    
+    .explanation-card:hover {
+        transform: translateY(-5px);
+        border-color: rgba(0, 255, 170, 0.4);
+    }
+    
+    .card-number {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #00ffaa, #00ccff);
+        border-radius: 50%;
+        color: #0a0a1a;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+    }
+    
+    .card-title {
+        color: #fff;
+        font-size: 1.2rem;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .card-text {
+        color: #a0a0c0;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+    
+    .formula-box {
+        background: rgba(10, 10, 26, 0.8);
+        border: 1px solid rgba(255, 107, 157, 0.3);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin: 2rem 0;
+        text-align: center;
+    }
+    
+    .formula-label {
+        color: #a0a0c0;
+        font-size: 0.875rem;
+        margin-bottom: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    
+    .formula {
+        font-family: 'Courier New', monospace;
+        font-size: 1.3rem;
+        color: #ff6b9d;
+        margin-bottom: 1rem;
+    }
+    
+    .formula-explanation {
+        color: #a0a0c0;
+        font-size: 0.9rem;
+        line-height: 1.6;
+    }
+    
+    .degrees-showcase {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 2rem 0;
+    }
+    
+    .degree-item {
+        background: rgba(26, 26, 58, 0.5);
+        border: 1px solid rgba(100, 200, 255, 0.15);
+        border-radius: 10px;
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .degree-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #00ffaa;
+        margin-bottom: 0.5rem;
+    }
+    
+    .degree-name {
+        color: #fff;
+        font-size: 0.95rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .degree-example {
+        font-family: 'Courier New', monospace;
+        color: #ff6b9d;
+        font-size: 0.85rem;
+    }
+    
+    .visual-example {
+        background: linear-gradient(135deg, rgba(10, 10, 26, 0.95), rgba(26, 26, 58, 0.95));
+        border: 2px solid rgba(0, 255, 170, 0.3);
+        border-radius: 16px;
+        padding: 2rem;
+        margin: 2rem 0;
+    }
+    
+    .visual-title {
+        color: #00ffaa;
+        font-size: 1.2rem;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .visual-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .visual-step {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+    }
+    
+    .step-icon {
+        font-size: 1.5rem;
+        min-width: 40px;
+        text-align: center;
+    }
+    
+    .step-content h4 {
+        color: #fff;
+        margin-bottom: 0.5rem;
+    }
+    
+    .step-content p {
+        color: #a0a0c0;
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+    
+    .key-concepts {
+        background: rgba(26, 26, 58, 0.5);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .key-concepts h3 {
+        color: #00ffaa;
+        margin-bottom: 1rem;
+    }
+    
+    .concept-list {
+        list-style: none;
+        padding: 0;
+    }
+    
+    .concept-list li {
+        color: #a0a0c0;
+        padding: 0.5rem 0;
+        padding-left: 1.5rem;
+        position: relative;
+    }
+    
+    .concept-list li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: #ff6b9d;
+    }
+    
+    .concept-list strong {
+        color: #fff;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container learn-game">
+    <div class="game-header">
+        <h1 class="game-title">grafIA <span class="accent">Learn</span></h1>
+        <p class="game-instructions">Dibuja una curva en el plano cartesiano. La IA aprenderá la función.</p>
+    </div>
+    
+    <div class="game-area">
+        <div class="canvas-container" style="position: relative;">
+            <canvas id="drawCanvas" width="800" height="500"></canvas>
+            <div class="canvas-overlay" id="canvasOverlay">
+                <span>Click en "Empezar" para dibujar</span>
+            </div>
+            <div class="analysis-status" id="analysisStatus">Analizando puntos...</div>
+        </div>
+        
+        <div class="curve-legend" id="curveLegend" style="display: none;">
+            <div class="legend-item">
+                <span class="legend-dot user"></span>
+                <span>Tu dibujo</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-dot ai"></span>
+                <span>Curva aprendida (IA)</span>
+            </div>
+        </div>
+        
+        <div class="game-controls" id="gameControls">
+            <button class="btn btn-primary" id="btnStart">Empezar</button>
+            <button class="btn btn-secondary" id="btnClear" disabled>Limpiar</button>
+            <button class="btn btn-accent" id="btnAnalyze" disabled>Analizar con IA</button>
+        </div>
+    </div>
+    
+    <div class="results-panel" id="resultsPanel" style="display: none;">
+        <h2 class="results-title">¡Análisis Completado!</h2>
+        
+        <div class="function-result-box">
+            <span class="function-result-label">Función detectada por la IA (compatible con GeoGebra)</span>
+            <span class="function-result-value" id="functionDisplay">-</span>
+            <p class="geogebra-hint">Copia esta función y pégala en GeoGebra para verificar</p>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-value" id="errorValue">-</span>
+                <span class="stat-label">Error de IA</span>
+            </div>
+            <div class="stat highlight">
+                <span class="stat-value" id="scoreValue">-</span>
+                <span class="stat-label">Tu Score</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="degreeValue">-</span>
+                <span class="stat-label">Grado</span>
+            </div>
+        </div>
+        
+        <div class="save-score-form" id="saveScoreForm">
+            <h3>Guardar tu puntuación en el ranking</h3>
+            <div class="form-group" id="saveFormGroup">
+                <input type="text" id="playerName" placeholder="Tu nombre (2-20 caracteres)" maxlength="20">
+                <button class="btn btn-primary" id="btnSaveScore">Guardar</button>
+            </div>
+            <p class="form-hint">Solo letras, números y guiones bajos</p>
+            <p class="form-message" id="saveMessage"></p>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="btnPlayAgain">Jugar de nuevo</button>
+            <a href="{% url 'games:leaderboard_learn' %}" class="btn btn-outline">Ver Ranking</a>
+        </div>
+    </div>
+</div>
+
+<!-- Explanation Section -->
+<div class="game-container explanation-section">
+    <h2 class="explanation-title">¿Cómo funciona la <span class="accent">Regresión Polinomial</span>?</h2>
+    <p class="explanation-subtitle">La "inteligencia artificial" detrás de grafIA Learn explicada de forma sencilla</p>
+    
+    <div class="explanation-grid">
+        <div class="explanation-card">
+            <div class="card-number">1</div>
+            <h3 class="card-title">Captura de Puntos</h3>
+            <p class="card-text">Cuando dibujas en el canvas, el sistema captura las coordenadas (x, y) de cada punto de tu trazo. Estos puntos son los "datos de entrenamiento" que la IA usará para aprender.</p>
+        </div>
+        
+        <div class="explanation-card">
+            <div class="card-number">2</div>
+            <h3 class="card-title">Búsqueda del Mejor Ajuste</h3>
+            <p class="card-text">La IA prueba polinomios de diferentes grados (del 1 al 7) y calcula cuál se ajusta mejor a tus puntos, minimizando la distancia entre la curva y tu dibujo.</p>
+        </div>
+        
+        <div class="explanation-card">
+            <div class="card-number">3</div>
+            <h3 class="card-title">Cálculo de Coeficientes</h3>
+            <p class="card-text">Usando el método de mínimos cuadrados (numpy.polyfit), encuentra los valores exactos de los coeficientes que hacen que el polinomio pase lo más cerca posible de todos tus puntos.</p>
+        </div>
+        
+        <div class="explanation-card">
+            <div class="card-number">4</div>
+            <h3 class="card-title">Medición del Error</h3>
+            <p class="card-text">El coeficiente R² mide qué tan bien el polinomio explica tu dibujo. Un R² de 1 significa ajuste perfecto; mientras más bajo, más puntos ganaste porque confundiste a la IA.</p>
+        </div>
+    </div>
+    
+    <div class="formula-box">
+        <p class="formula-label">Forma general de un polinomio</p>
+        <p class="formula">f(x) = aₙxⁿ + aₙ₋₁xⁿ⁻¹ + ... + a₂x² + a₁x + a₀</p>
+        <p class="formula-explanation">Donde <strong>n</strong> es el grado del polinomio y <strong>aₙ, aₙ₋₁, ..., a₀</strong> son los coeficientes que la regresión calcula automáticamente para ajustarse a tus puntos.</p>
+    </div>
+    
+    <h3 style="color: #fff; text-align: center; margin: 2rem 0 1rem;">Grados de Polinomios</h3>
+    <p style="color: #a0a0c0; text-align: center; margin-bottom: 1.5rem;">Cada grado puede representar diferentes tipos de curvas</p>
+    
+    <div class="degrees-showcase">
+        <div class="degree-item">
+            <div class="degree-number">1</div>
+            <div class="degree-name">Lineal</div>
+            <div class="degree-example">ax + b</div>
+        </div>
+        <div class="degree-item">
+            <div class="degree-number">2</div>
+            <div class="degree-name">Cuadrática</div>
+            <div class="degree-example">ax² + bx + c</div>
+        </div>
+        <div class="degree-item">
+            <div class="degree-number">3</div>
+            <div class="degree-name">Cúbica</div>
+            <div class="degree-example">ax³ + bx² + ...</div>
+        </div>
+        <div class="degree-item">
+            <div class="degree-number">4+</div>
+            <div class="degree-name">Superior</div>
+            <div class="degree-example">ax⁴ + ax³ + ...</div>
+        </div>
+    </div>
+    
+    <div class="visual-example">
+        <h3 class="visual-title">Así funciona paso a paso</h3>
+        <div class="visual-steps">
+            <div class="visual-step">
+                <div class="step-icon">✏️</div>
+                <div class="step-content">
+                    <h4>Dibujas una curva</h4>
+                    <p>Cada movimiento del mouse registra un punto (x, y) en coordenadas matemáticas reales del plano cartesiano (-5 a 5).</p>
+                </div>
+            </div>
+            <div class="visual-step">
+                <div class="step-icon">🔍</div>
+                <div class="step-content">
+                    <h4>Análisis de puntos</h4>
+                    <p>El algoritmo examina todos los puntos capturados y los prepara para el proceso de regresión.</p>
+                </div>
+            </div>
+            <div class="visual-step">
+                <div class="step-icon">🧮</div>
+                <div class="step-content">
+                    <h4>Regresión polinomial</h4>
+                    <p>Se prueban polinomios de grado 1 a 7. Para cada uno, se calculan los coeficientes óptimos usando mínimos cuadrados y se mide el error.</p>
+                </div>
+            </div>
+            <div class="visual-step">
+                <div class="step-icon">⚖️</div>
+                <div class="step-content">
+                    <h4>Selección del mejor modelo</h4>
+                    <p>Se elige el grado que mejor equilibra precisión y simplicidad (penalizando grados muy altos para evitar "overfitting").</p>
+                </div>
+            </div>
+            <div class="visual-step">
+                <div class="step-icon">📊</div>
+                <div class="step-content">
+                    <h4>Resultado final</h4>
+                    <p>La función encontrada se dibuja en rosa, se muestra la fórmula exacta (compatible con GeoGebra) y se calcula tu puntuación.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="key-concepts">
+        <h3>Conceptos Clave</h3>
+        <ul class="concept-list">
+            <li><strong>Mínimos Cuadrados:</strong> Método matemático que minimiza la suma de los cuadrados de las diferencias entre los puntos reales y los predichos por el modelo.</li>
+            <li><strong>Coeficiente R² (R-cuadrado):</strong> Indica qué porcentaje de la variación en tus datos es explicado por el modelo. Va de 0 a 1.</li>
+            <li><strong>Overfitting:</strong> Cuando un modelo es demasiado complejo y se ajusta al "ruido" en lugar del patrón real. Por eso penalizamos grados altos.</li>
+            <li><strong>Grado del polinomio:</strong> Determina la "complejidad" de la curva. Mayor grado = más curvas y ondulaciones posibles.</li>
+            <li><strong>NumPy polyfit:</strong> Función de Python que implementa la regresión polinomial usando álgebra lineal optimizada.</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Canvas setup
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('canvasOverlay');
+    const analysisStatus = document.getElementById('analysisStatus');
+    const curveLegend = document.getElementById('curveLegend');
+    
+    // Buttons
+    const btnStart = document.getElementById('btnStart');
+    const btnClear = document.getElementById('btnClear');
+    const btnAnalyze = document.getElementById('btnAnalyze');
+    const btnSaveScore = document.getElementById('btnSaveScore');
+    const btnPlayAgain = document.getElementById('btnPlayAgain');
+    
+    // Panels
+    const resultsPanel = document.getElementById('resultsPanel');
+    const saveScoreForm = document.getElementById('saveScoreForm');
+    const saveFormGroup = document.getElementById('saveFormGroup');
+    
+    // Cartesian plane settings
+    const MATH_X_MIN = -5;
+    const MATH_X_MAX = 5;
+    const MATH_Y_MIN = -5;
+    const MATH_Y_MAX = 5;
+    const PADDING = 40; // Padding for axis labels
+    
+    // State
+    let isDrawing = false;
+    let gameStarted = false;
+    let pixelPoints = []; // Points in pixel coordinates
+    let mathPoints = []; // Points in math coordinates
+    let lastPixelX = -1;
+    let currentScore = 0;
+    let currentError = 0;
+    let fittedMathPoints = []; // Fitted curve in math coordinates
+    let coefficients = [];
+    let polynomialDegree = 0;
+    let animationId = null;
+    let canvasWidth = 800;
+    let canvasHeight = 500;
+    
+    // Convert math coordinates to pixel coordinates
+    function mathToPixel(mx, my) {
+        const plotWidth = canvasWidth - 2 * PADDING;
+        const plotHeight = canvasHeight - 2 * PADDING;
+        
+        const px = PADDING + ((mx - MATH_X_MIN) / (MATH_X_MAX - MATH_X_MIN)) * plotWidth;
+        const py = PADDING + ((MATH_Y_MAX - my) / (MATH_Y_MAX - MATH_Y_MIN)) * plotHeight;
+        
+        return { x: px, y: py };
+    }
+    
+    // Convert pixel coordinates to math coordinates
+    function pixelToMath(px, py) {
+        const plotWidth = canvasWidth - 2 * PADDING;
+        const plotHeight = canvasHeight - 2 * PADDING;
+        
+        const mx = MATH_X_MIN + ((px - PADDING) / plotWidth) * (MATH_X_MAX - MATH_X_MIN);
+        const my = MATH_Y_MAX - ((py - PADDING) / plotHeight) * (MATH_Y_MAX - MATH_Y_MIN);
+        
+        return { x: mx, y: my };
+    }
+    
+    // Resize canvas (1:1 aspect ratio)
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Make it square (1:1)
+        const size = Math.min(rect.width, 600);
+        canvasWidth = size;
+        canvasHeight = size;
+        
+        canvas.width = canvasWidth * dpr;
+        canvas.height = canvasHeight * dpr;
+        
+        canvas.style.width = canvasWidth + 'px';
+        canvas.style.height = canvasHeight + 'px';
+        
+        ctx.scale(dpr, dpr);
+        redrawCanvas();
+    }
+    
+    // Draw cartesian plane with grid and axes
+    function drawCartesianPlane() {
+        const plotWidth = canvasWidth - 2 * PADDING;
+        const plotHeight = canvasHeight - 2 * PADDING;
+        
+        // Background
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+        
+        // Grid lines
+        ctx.strokeStyle = 'rgba(100, 200, 255, 0.1)';
+        ctx.lineWidth = 1;
+        
+        // Vertical grid lines (for each integer x)
+        for (let x = MATH_X_MIN; x <= MATH_X_MAX; x++) {
+            const p = mathToPixel(x, 0);
+            ctx.beginPath();
+            ctx.moveTo(p.x, PADDING);
+            ctx.lineTo(p.x, canvasHeight - PADDING);
+            ctx.stroke();
+        }
+        
+        // Horizontal grid lines (for each integer y)
+        for (let y = MATH_Y_MIN; y <= MATH_Y_MAX; y++) {
+            const p = mathToPixel(0, y);
+            ctx.beginPath();
+            ctx.moveTo(PADDING, p.y);
+            ctx.lineTo(canvasWidth - PADDING, p.y);
+            ctx.stroke();
+        }
+        
+        // Axes (thicker)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.lineWidth = 2;
+        
+        // X axis
+        const originY = mathToPixel(0, 0).y;
+        ctx.beginPath();
+        ctx.moveTo(PADDING, originY);
+        ctx.lineTo(canvasWidth - PADDING, originY);
+        ctx.stroke();
+        
+        // Y axis
+        const originX = mathToPixel(0, 0).x;
+        ctx.beginPath();
+        ctx.moveTo(originX, PADDING);
+        ctx.lineTo(originX, canvasHeight - PADDING);
+        ctx.stroke();
+        
+        // Axis labels
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        
+        // X axis labels
+        for (let x = MATH_X_MIN; x <= MATH_X_MAX; x++) {
+            if (x === 0) continue;
+            const p = mathToPixel(x, 0);
+            ctx.fillText(x.toString(), p.x, originY + 5);
+        }
+        
+        // Y axis labels
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let y = MATH_Y_MIN; y <= MATH_Y_MAX; y++) {
+            if (y === 0) continue;
+            const p = mathToPixel(0, y);
+            ctx.fillText(y.toString(), originX - 8, p.y);
+        }
+        
+        // Origin label
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'top';
+        ctx.fillText('0', originX - 5, originY + 5);
+        
+        // Axis names
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('x', canvasWidth - PADDING + 20, originY);
+        ctx.fillText('y', originX, PADDING - 20);
+    }
+    
+    // Draw user curve from pixel points
+    function drawUserCurve(alpha = 1) {
+        if (pixelPoints.length < 2) return;
+        
+        ctx.strokeStyle = `rgba(0, 255, 170, ${alpha})`;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(pixelPoints[0].x, pixelPoints[0].y);
+        
+        for (let i = 1; i < pixelPoints.length; i++) {
+            ctx.lineTo(pixelPoints[i].x, pixelPoints[i].y);
+        }
+        ctx.stroke();
+    }
+    
+    // Draw fitted curve from math points
+    function drawFittedCurve(mathPts, alpha = 1) {
+        if (mathPts.length < 2) return;
+        
+        ctx.strokeStyle = `rgba(255, 107, 157, ${alpha})`;
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        
+        const firstPixel = mathToPixel(mathPts[0].x, mathPts[0].y);
+        ctx.moveTo(firstPixel.x, firstPixel.y);
+        
+        for (let i = 1; i < mathPts.length; i++) {
+            const px = mathToPixel(mathPts[i].x, mathPts[i].y);
+            ctx.lineTo(px.x, px.y);
+        }
+        ctx.stroke();
+    }
+    
+    // Redraw canvas
+    function redrawCanvas() {
+        drawCartesianPlane();
+        drawUserCurve();
+    }
+    
+    // Animate point analysis
+    function animatePointAnalysis(callback) {
+        const totalFrames = 60;
+        let frame = 0;
+        
+        analysisStatus.textContent = 'Analizando puntos...';
+        analysisStatus.style.display = 'block';
+        
+        function animate() {
+            drawCartesianPlane();
+            drawUserCurve(0.4);
+            
+            const pointsToShow = Math.floor((frame / totalFrames) * pixelPoints.length);
+            
+            for (let i = 0; i < pointsToShow; i++) {
+                const p = pixelPoints[i];
+                const progress = i / pixelPoints.length;
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 204, 255, ${0.8 - progress * 0.5})`;
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(0, 204, 255, ${0.3 - progress * 0.2})`;
+                ctx.fill();
+            }
+            
+            if (pointsToShow < pixelPoints.length && pointsToShow > 0) {
+                const currentPoint = pixelPoints[pointsToShow - 1];
+                
+                ctx.strokeStyle = 'rgba(0, 255, 255, 0.5)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([5, 5]);
+                ctx.beginPath();
+                ctx.moveTo(currentPoint.x, PADDING);
+                ctx.lineTo(currentPoint.x, canvasHeight - PADDING);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            frame++;
+            
+            if (frame <= totalFrames) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                analysisStatus.textContent = 'Construyendo función...';
+                callback();
+            }
+        }
+        
+        animate();
+    }
+    
+    // Animate curve construction
+    function animateCurveConstruction(mathPts, callback) {
+        const totalFrames = 80;
+        let frame = 0;
+        
+        function animate() {
+            drawCartesianPlane();
+            drawUserCurve(0.6);
+            
+            const pointsToShow = Math.floor((frame / totalFrames) * mathPts.length);
+            
+            if (pointsToShow > 1) {
+                const partialPts = mathPts.slice(0, pointsToShow);
+                drawFittedCurve(partialPts, 1);
+                
+                // Glow at the tip
+                const tipMath = mathPts[pointsToShow - 1];
+                const tipPixel = mathToPixel(tipMath.x, tipMath.y);
+                
+                ctx.beginPath();
+                ctx.arc(tipPixel.x, tipPixel.y, 8, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255, 107, 157, 0.6)';
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(tipPixel.x, tipPixel.y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff6b9d';
+                ctx.fill();
+            }
+            
+            frame++;
+            
+            if (frame <= totalFrames) {
+                animationId = requestAnimationFrame(animate);
+            } else {
+                analysisStatus.style.display = 'none';
+                callback();
+            }
+        }
+        
+        animate();
+    }
+    
+    // Draw final result
+    function drawFinalResult() {
+        drawCartesianPlane();
+        drawUserCurve(0.7);
+        drawFittedCurve(fittedMathPoints, 1);
+        curveLegend.style.display = 'flex';
+    }
+    
+    // Format polynomial for display (GeoGebra compatible)
+    function formatPolynomial(coeffs, degree) {
+        if (!coeffs || coeffs.length === 0) return 'f(x) = ?';
+        
+        let terms = [];
+        for (let i = 0; i < coeffs.length; i++) {
+            const power = degree - i;
+            const coeff = coeffs[i];
+            
+            // Skip very small coefficients
+            if (Math.abs(coeff) < 0.000001) continue;
+            
+            const absCoeff = Math.abs(coeff);
+            
+            // Format coefficient with high precision for GeoGebra
+            let coeffStr = absCoeff.toPrecision(6).replace(/\.?0+$/, '');
+            
+            let term = '';
+            
+            if (power === 0) {
+                term = coeffStr;
+            } else if (power === 1) {
+                term = coeffStr + '*x';
+            } else {
+                term = coeffStr + '*x^' + power;
+            }
+            
+            if (terms.length === 0) {
+                terms.push(coeff >= 0 ? term : '-' + term);
+            } else {
+                terms.push((coeff >= 0 ? ' + ' : ' - ') + term);
+            }
+        }
+        
+        return terms.length > 0 ? 'f(x) = ' + terms.join('') : 'f(x) = 0';
+    }
+    
+    // Mouse handlers
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+    
+    function isInPlotArea(px, py) {
+        return px >= PADDING && px <= canvasWidth - PADDING &&
+               py >= PADDING && py <= canvasHeight - PADDING;
+    }
+    
+    function startDrawing(e) {
+        if (!gameStarted) return;
+        
+        const pos = getMousePos(e);
+        if (!isInPlotArea(pos.x, pos.y)) return;
+        
+        isDrawing = true;
+        pixelPoints = [pos];
+        mathPoints = [pixelToMath(pos.x, pos.y)];
+        lastPixelX = pos.x;
+        overlay.style.display = 'none';
+    }
+    
+    function draw(e) {
+        if (!isDrawing || !gameStarted) return;
+        
+        const pos = getMousePos(e);
+        if (!isInPlotArea(pos.x, pos.y)) return;
+        if (pos.x < lastPixelX) return; // Only left to right
+        
+        lastPixelX = pos.x;
+        pixelPoints.push(pos);
+        mathPoints.push(pixelToMath(pos.x, pos.y));
+        redrawCanvas();
+    }
+    
+    function stopDrawing() {
+        if (isDrawing) {
+            isDrawing = false;
+            if (mathPoints.length > 5) {
+                btnAnalyze.disabled = false;
+            }
+        }
+    }
+    
+    // Touch handlers
+    function getTouchPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
+    
+    function startTouchDrawing(e) {
+        e.preventDefault();
+        if (!gameStarted) return;
+        
+        const pos = getTouchPos(e);
+        if (!isInPlotArea(pos.x, pos.y)) return;
+        
+        isDrawing = true;
+        pixelPoints = [pos];
+        mathPoints = [pixelToMath(pos.x, pos.y)];
+        lastPixelX = pos.x;
+        overlay.style.display = 'none';
+    }
+    
+    function touchDraw(e) {
+        e.preventDefault();
+        if (!isDrawing || !gameStarted) return;
+        
+        const pos = getTouchPos(e);
+        if (!isInPlotArea(pos.x, pos.y)) return;
+        if (pos.x < lastPixelX) return;
+        
+        lastPixelX = pos.x;
+        pixelPoints.push(pos);
+        mathPoints.push(pixelToMath(pos.x, pos.y));
+        redrawCanvas();
+    }
+    
+    // Event listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    canvas.addEventListener('touchstart', startTouchDrawing, { passive: false });
+    canvas.addEventListener('touchmove', touchDraw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Start button
+    btnStart.addEventListener('click', function() {
+        gameStarted = true;
+        pixelPoints = [];
+        mathPoints = [];
+        fittedMathPoints = [];
+        lastPixelX = -1;
+        
+        btnStart.disabled = true;
+        btnClear.disabled = false;
+        btnAnalyze.disabled = true;
+        
+        resultsPanel.style.display = 'none';
+        curveLegend.style.display = 'none';
+        overlay.innerHTML = '<span>Dibuja de izquierda a derecha</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    // Clear button
+    btnClear.addEventListener('click', function() {
+        pixelPoints = [];
+        mathPoints = [];
+        fittedMathPoints = [];
+        lastPixelX = -1;
+        btnAnalyze.disabled = true;
+        curveLegend.style.display = 'none';
+        
+        overlay.innerHTML = '<span>Dibuja de izquierda a derecha</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    // Analyze button
+    btnAnalyze.addEventListener('click', async function() {
+        if (mathPoints.length < 5) {
+            alert('Dibuja más puntos');
+            return;
+        }
+        
+        btnAnalyze.disabled = true;
+        btnClear.disabled = true;
+        btnStart.disabled = true;
+        gameStarted = false;
+        
+        try {
+            animatePointAnalysis(async function() {
+                // Send math coordinates to server
+                const response = await fetch('/api/fit-curve/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ points: mathPoints })
+                });
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    alert(data.message || 'Error desconocido');
+                    btnAnalyze.disabled = false;
+                    btnClear.disabled = false;
+                    btnStart.disabled = false;
+                    analysisStatus.style.display = 'none';
+                    return;
+                }
+                
+                currentScore = data.score;
+                currentError = data.fitting_error;
+                fittedMathPoints = data.fitted_points;
+                coefficients = data.coefficients;
+                polynomialDegree = data.degree;
+                
+                animateCurveConstruction(fittedMathPoints, function() {
+                    drawFinalResult();
+                    
+                    document.getElementById('functionDisplay').textContent = formatPolynomial(coefficients, polynomialDegree);
+                    document.getElementById('errorValue').textContent = (currentError * 100).toFixed(1) + '%';
+                    document.getElementById('scoreValue').textContent = currentScore;
+                    document.getElementById('degreeValue').textContent = polynomialDegree;
+                    
+                    resultsPanel.style.display = 'block';
+                    saveScoreForm.style.display = 'block';
+                    saveFormGroup.style.display = 'flex';
+                    document.getElementById('playerName').value = '';
+                    document.getElementById('saveMessage').textContent = '';
+                    btnSaveScore.disabled = false;
+                    btnSaveScore.textContent = 'Guardar';
+                    
+                    btnStart.disabled = false;
+                    
+                    resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
+            });
+            
+        } catch (err) {
+            console.error(err);
+            alert('Error al analizar la curva');
+            btnAnalyze.disabled = false;
+            btnClear.disabled = false;
+            btnStart.disabled = false;
+            analysisStatus.style.display = 'none';
+        }
+    });
+    
+    // Save score button
+    btnSaveScore.addEventListener('click', async function() {
+        const playerName = document.getElementById('playerName').value.trim();
+        const messageEl = document.getElementById('saveMessage');
+        
+        if (playerName.length < 2 || playerName.length > 20) {
+            messageEl.textContent = 'El nombre debe tener entre 2 y 20 caracteres';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(playerName)) {
+            messageEl.textContent = 'Solo letras, números y guiones bajos';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        btnSaveScore.disabled = true;
+        btnSaveScore.textContent = 'Guardando...';
+        
+        try {
+            const response = await fetch('/api/save-learn-score/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    player_name: playerName,
+                    score: currentScore,
+                    fitting_error: currentError
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success) {
+                messageEl.textContent = data.message || 'Error al guardar';
+                messageEl.className = 'form-message error';
+                btnSaveScore.disabled = false;
+                btnSaveScore.textContent = 'Guardar';
+                return;
+            }
+            
+            messageEl.textContent = '¡Puntuación guardada exitosamente!';
+            messageEl.className = 'form-message success';
+            saveFormGroup.style.display = 'none';
+            
+        } catch (err) {
+            messageEl.textContent = 'Error al guardar';
+            messageEl.className = 'form-message error';
+            btnSaveScore.disabled = false;
+            btnSaveScore.textContent = 'Guardar';
+        }
+    });
+    
+    // Play again button
+    btnPlayAgain.addEventListener('click', function() {
+        if (animationId) {
+            cancelAnimationFrame(animationId);
+            animationId = null;
+        }
+        
+        pixelPoints = [];
+        mathPoints = [];
+        fittedMathPoints = [];
+        lastPixelX = -1;
+        currentScore = 0;
+        currentError = 0;
+        coefficients = [];
+        polynomialDegree = 0;
+        gameStarted = false;
+        
+        resultsPanel.style.display = 'none';
+        curveLegend.style.display = 'none';
+        analysisStatus.style.display = 'none';
+        saveFormGroup.style.display = 'flex';
+        document.getElementById('playerName').value = '';
+        document.getElementById('saveMessage').textContent = '';
+        btnSaveScore.disabled = false;
+        btnSaveScore.textContent = 'Guardar';
+        
+        btnStart.disabled = false;
+        btnClear.disabled = true;
+        btnAnalyze.disabled = true;
+        
+        overlay.innerHTML = '<span>Click en "Empezar" para dibujar</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    // Initialize
+    resizeCanvas();
+})();
+</script>
+{% endblock %}

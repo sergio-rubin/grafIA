@@ -1,0 +1,774 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}grafIA Learn — Dibuja y Aprende{% endblock %}
+
+{% block extra_css %}
+<style>
+    .analyzing-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(10, 10, 26, 0.95);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+    
+    .analyzing-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    .analyzing-content {
+        text-align: center;
+    }
+    
+    .analyzing-spinner {
+        width: 80px;
+        height: 80px;
+        border: 4px solid rgba(0, 255, 170, 0.2);
+        border-top-color: #00ffaa;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 1.5rem;
+    }
+    
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+    
+    .analyzing-text {
+        font-size: 1.5rem;
+        color: #00ffaa;
+        margin-bottom: 0.5rem;
+    }
+    
+    .analyzing-subtext {
+        color: #a0a0c0;
+        font-size: 1rem;
+    }
+    
+    .analyzing-dots::after {
+        content: '';
+        animation: dots 1.5s steps(4, end) infinite;
+    }
+    
+    @keyframes dots {
+        0%, 20% { content: ''; }
+        40% { content: '.'; }
+        60% { content: '..'; }
+        80%, 100% { content: '...'; }
+    }
+    
+    /* Results visual improvements */
+    .results-visual {
+        background: var(--bg-secondary);
+        border-radius: var(--radius-lg);
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border: 1px solid var(--border-color);
+    }
+    
+    .results-visual-header {
+        text-align: center;
+        margin-bottom: 1rem;
+    }
+    
+    .results-visual-header h3 {
+        font-size: 1.25rem;
+        color: var(--text-primary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .function-display {
+        background: var(--bg-card);
+        padding: 1rem 1.5rem;
+        border-radius: var(--radius-md);
+        text-align: center;
+        margin-bottom: 1rem;
+        border: 1px solid rgba(0, 255, 170, 0.3);
+    }
+    
+    .function-display-label {
+        display: block;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 0.5rem;
+    }
+    
+    .function-display-value {
+        font-family: 'Courier New', monospace;
+        font-size: 1.25rem;
+        color: #ff6b9d;
+        font-weight: 600;
+    }
+    
+    .canvas-result-container {
+        position: relative;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 1rem;
+    }
+    
+    #resultCanvas {
+        display: block;
+        width: 100%;
+        border-radius: var(--radius-md);
+    }
+    
+    .curve-legend {
+        display: flex;
+        justify-content: center;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+    
+    .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+    }
+    
+    .legend-dot {
+        width: 16px;
+        height: 4px;
+        border-radius: 2px;
+    }
+    
+    .legend-dot.user {
+        background: #00ffaa;
+    }
+    
+    .legend-dot.ai {
+        background: #ff6b9d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container learn-game">
+    <div class="game-header">
+        <h1 class="game-title">grafIA <span class="accent">Learn</span></h1>
+        <p class="game-instructions">Dibuja una curva de izquierda a derecha. La IA aprenderá a replicarla.</p>
+    </div>
+    
+    <div class="game-area">
+        <div class="canvas-container">
+            <canvas id="drawCanvas" width="800" height="400"></canvas>
+            <div class="canvas-overlay" id="canvasOverlay">
+                <span>Click para empezar a dibujar</span>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <button class="btn btn-primary" id="btnStart">Empezar</button>
+            <button class="btn btn-secondary" id="btnClear" disabled>Limpiar</button>
+            <button class="btn btn-accent" id="btnAnalyze" disabled>Analizar con IA</button>
+        </div>
+    </div>
+    
+    <!-- Analyzing Overlay -->
+    <div class="analyzing-overlay" id="analyzingOverlay">
+        <div class="analyzing-content">
+            <div class="analyzing-spinner"></div>
+            <p class="analyzing-text">La IA está aprendiendo<span class="analyzing-dots"></span></p>
+            <p class="analyzing-subtext">Ajustando regresión polinomial</p>
+        </div>
+    </div>
+    
+    <div class="results-panel" id="resultsPanel" style="display: none;">
+        <h2 class="results-title">Resultados del Análisis</h2>
+        
+        <!-- Visual Results -->
+        <div class="results-visual">
+            <div class="results-visual-header">
+                <h3>Comparación de Curvas</h3>
+            </div>
+            
+            <div class="canvas-result-container">
+                <canvas id="resultCanvas" width="800" height="350"></canvas>
+            </div>
+            
+            <div class="curve-legend">
+                <div class="legend-item">
+                    <span class="legend-dot user"></span>
+                    <span>Tu dibujo</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot ai"></span>
+                    <span>Curva aprendida (IA)</span>
+                </div>
+            </div>
+            
+            <div class="function-display">
+                <span class="function-display-label">Función detectada por la IA:</span>
+                <span class="function-display-value" id="functionDisplay">-</span>
+            </div>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-value" id="errorValue">-</span>
+                <span class="stat-label">Error</span>
+            </div>
+            <div class="stat highlight">
+                <span class="stat-value" id="scoreValue">-</span>
+                <span class="stat-label">Score</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="degreeValue">-</span>
+                <span class="stat-label">Grado polinomio</span>
+            </div>
+        </div>
+        
+        <div class="save-score-form" id="saveScoreForm">
+            <h3>Guardar tu puntuación</h3>
+            <div class="form-group">
+                <input type="text" id="playerName" placeholder="Tu nombre (2-20 caracteres)" maxlength="20" pattern="[a-zA-Z0-9_]+">
+                <button class="btn btn-primary" id="btnSaveScore">Guardar</button>
+            </div>
+            <p class="form-hint">Solo letras, números y guiones bajos</p>
+            <p class="form-message" id="saveMessage"></p>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="btnPlayAgain">Jugar de nuevo</button>
+            <a href="{% url 'games:leaderboard_learn' %}" class="btn btn-outline">Ver Ranking</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Canvas setup
+    const canvas = document.getElementById('drawCanvas');
+    const ctx = canvas.getContext('2d');
+    const overlay = document.getElementById('canvasOverlay');
+    const analyzingOverlay = document.getElementById('analyzingOverlay');
+    
+    // Result canvas
+    const resultCanvas = document.getElementById('resultCanvas');
+    const resultCtx = resultCanvas.getContext('2d');
+    
+    // Buttons
+    const btnStart = document.getElementById('btnStart');
+    const btnClear = document.getElementById('btnClear');
+    const btnAnalyze = document.getElementById('btnAnalyze');
+    const btnSaveScore = document.getElementById('btnSaveScore');
+    const btnPlayAgain = document.getElementById('btnPlayAgain');
+    
+    // Panels
+    const resultsPanel = document.getElementById('resultsPanel');
+    const saveScoreForm = document.getElementById('saveScoreForm');
+    
+    // State
+    let isDrawing = false;
+    let gameStarted = false;
+    let points = [];
+    let lastX = -1;
+    let currentScore = 0;
+    let currentError = 0;
+    let fittedPoints = [];
+    let coefficients = [];
+    let polynomialDegree = 0;
+    
+    // Resize canvas for responsiveness
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = Math.min(400, rect.width * 0.5) * dpr;
+        
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = Math.min(400, rect.width * 0.5) + 'px';
+        
+        ctx.scale(dpr, dpr);
+        
+        redrawCanvas();
+    }
+    
+    function resizeResultCanvas() {
+        const container = resultCanvas.parentElement;
+        const rect = container.getBoundingClientRect();
+        const dpr = window.devicePixelRatio || 1;
+        
+        resultCanvas.width = rect.width * dpr;
+        resultCanvas.height = Math.min(350, rect.width * 0.45) * dpr;
+        
+        resultCanvas.style.width = rect.width + 'px';
+        resultCanvas.style.height = Math.min(350, rect.width * 0.45) + 'px';
+        
+        resultCtx.scale(dpr, dpr);
+    }
+    
+    // Draw grid
+    function drawGrid(context, canvasEl) {
+        const dpr = window.devicePixelRatio || 1;
+        const width = canvasEl.width / dpr;
+        const height = canvasEl.height / dpr;
+        
+        context.strokeStyle = 'rgba(100, 200, 255, 0.15)';
+        context.lineWidth = 1;
+        
+        // Vertical lines
+        for (let x = 0; x <= width; x += 40) {
+            context.beginPath();
+            context.moveTo(x, 0);
+            context.lineTo(x, height);
+            context.stroke();
+        }
+        
+        // Horizontal lines
+        for (let y = 0; y <= height; y += 40) {
+            context.beginPath();
+            context.moveTo(0, y);
+            context.lineTo(width, y);
+            context.stroke();
+        }
+    }
+    
+    // Redraw main canvas
+    function redrawCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const width = canvas.width / dpr;
+        const height = canvas.height / dpr;
+        
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, width, height);
+        
+        drawGrid(ctx, canvas);
+        
+        // Draw user points
+        if (points.length > 1) {
+            ctx.strokeStyle = '#00ffaa';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(points[0].x, points[0].y);
+            
+            for (let i = 1; i < points.length; i++) {
+                ctx.lineTo(points[i].x, points[i].y);
+            }
+            ctx.stroke();
+        }
+    }
+    
+    // Draw result canvas with both curves
+    function drawResultCanvas() {
+        resizeResultCanvas();
+        
+        const dpr = window.devicePixelRatio || 1;
+        const width = resultCanvas.width / dpr;
+        const height = resultCanvas.height / dpr;
+        
+        resultCtx.fillStyle = '#0a0a1a';
+        resultCtx.fillRect(0, 0, width, height);
+        
+        drawGrid(resultCtx, resultCanvas);
+        
+        // Scale points to fit result canvas
+        if (points.length < 2) return;
+        
+        const xMin = Math.min(...points.map(p => p.x));
+        const xMax = Math.max(...points.map(p => p.x));
+        const yMin = Math.min(...points.map(p => p.y));
+        const yMax = Math.max(...points.map(p => p.y));
+        
+        const padding = 30;
+        const scaleX = (width - padding * 2) / (xMax - xMin || 1);
+        const scaleY = (height - padding * 2) / (yMax - yMin || 1);
+        const scale = Math.min(scaleX, scaleY);
+        
+        const offsetX = (width - (xMax - xMin) * scale) / 2;
+        const offsetY = (height - (yMax - yMin) * scale) / 2;
+        
+        function transformPoint(x, y) {
+            return {
+                x: (x - xMin) * scale + offsetX,
+                y: (y - yMin) * scale + offsetY
+            };
+        }
+        
+        // Draw user curve
+        resultCtx.strokeStyle = '#00ffaa';
+        resultCtx.lineWidth = 3;
+        resultCtx.lineCap = 'round';
+        resultCtx.lineJoin = 'round';
+        resultCtx.beginPath();
+        
+        const firstPoint = transformPoint(points[0].x, points[0].y);
+        resultCtx.moveTo(firstPoint.x, firstPoint.y);
+        
+        for (let i = 1; i < points.length; i++) {
+            const p = transformPoint(points[i].x, points[i].y);
+            resultCtx.lineTo(p.x, p.y);
+        }
+        resultCtx.stroke();
+        
+        // Draw fitted curve
+        if (fittedPoints.length > 1) {
+            resultCtx.strokeStyle = '#ff6b9d';
+            resultCtx.lineWidth = 3;
+            resultCtx.setLineDash([8, 4]);
+            resultCtx.beginPath();
+            
+            const fp = transformPoint(fittedPoints[0].x, fittedPoints[0].y);
+            resultCtx.moveTo(fp.x, fp.y);
+            
+            for (let i = 1; i < fittedPoints.length; i++) {
+                const p = transformPoint(fittedPoints[i].x, fittedPoints[i].y);
+                resultCtx.lineTo(p.x, p.y);
+            }
+            resultCtx.stroke();
+            resultCtx.setLineDash([]);
+        }
+    }
+    
+    // Format polynomial function
+    function formatPolynomial(coeffs, degree) {
+        if (!coeffs || coeffs.length === 0) return '-';
+        
+        let terms = [];
+        for (let i = 0; i < coeffs.length; i++) {
+            const power = degree - i;
+            const coeff = coeffs[i];
+            
+            if (Math.abs(coeff) < 0.001) continue;
+            
+            let term = '';
+            const absCoeff = Math.abs(coeff);
+            const sign = coeff >= 0 ? '+' : '-';
+            
+            if (power === 0) {
+                term = absCoeff.toFixed(2);
+            } else if (power === 1) {
+                term = (absCoeff === 1 ? '' : absCoeff.toFixed(2)) + 'x';
+            } else {
+                term = (absCoeff === 1 ? '' : absCoeff.toFixed(2)) + 'x^' + power;
+            }
+            
+            if (terms.length === 0) {
+                terms.push(coeff >= 0 ? term : '-' + term);
+            } else {
+                terms.push(sign + ' ' + term);
+            }
+        }
+        
+        return terms.length > 0 ? 'f(x) = ' + terms.join(' ') : 'f(x) = 0';
+    }
+    
+    // Get mouse position
+    function getMousePos(e) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+    
+    // Start drawing
+    function startDrawing(e) {
+        if (!gameStarted) return;
+        
+        isDrawing = true;
+        const pos = getMousePos(e);
+        points = [pos];
+        lastX = pos.x;
+        
+        overlay.style.display = 'none';
+    }
+    
+    // Draw
+    function draw(e) {
+        if (!isDrawing || !gameStarted) return;
+        
+        const pos = getMousePos(e);
+        
+        // Block backward movement
+        if (pos.x < lastX) {
+            return;
+        }
+        
+        lastX = pos.x;
+        points.push(pos);
+        
+        redrawCanvas();
+    }
+    
+    // Stop drawing
+    function stopDrawing() {
+        if (isDrawing) {
+            isDrawing = false;
+            
+            if (points.length > 5) {
+                btnAnalyze.disabled = false;
+            }
+        }
+    }
+    
+    // Touch support
+    function getTouchPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        const touch = e.touches[0];
+        return {
+            x: touch.clientX - rect.left,
+            y: touch.clientY - rect.top
+        };
+    }
+    
+    function startTouchDrawing(e) {
+        e.preventDefault();
+        if (!gameStarted) return;
+        
+        isDrawing = true;
+        const pos = getTouchPos(e);
+        points = [pos];
+        lastX = pos.x;
+        
+        overlay.style.display = 'none';
+    }
+    
+    function touchDraw(e) {
+        e.preventDefault();
+        if (!isDrawing || !gameStarted) return;
+        
+        const pos = getTouchPos(e);
+        
+        if (pos.x < lastX) {
+            return;
+        }
+        
+        lastX = pos.x;
+        points.push(pos);
+        
+        redrawCanvas();
+    }
+    
+    // Event listeners
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseleave', stopDrawing);
+    
+    canvas.addEventListener('touchstart', startTouchDrawing, { passive: false });
+    canvas.addEventListener('touchmove', touchDraw, { passive: false });
+    canvas.addEventListener('touchend', stopDrawing);
+    
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+        if (resultsPanel.style.display !== 'none') {
+            drawResultCanvas();
+        }
+    });
+    
+    // Button handlers
+    btnStart.addEventListener('click', function() {
+        gameStarted = true;
+        points = [];
+        fittedPoints = [];
+        lastX = -1;
+        
+        btnStart.disabled = true;
+        btnClear.disabled = false;
+        btnAnalyze.disabled = true;
+        
+        resultsPanel.style.display = 'none';
+        overlay.innerHTML = '<span>Dibuja de izquierda a derecha</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    btnClear.addEventListener('click', function() {
+        points = [];
+        fittedPoints = [];
+        lastX = -1;
+        btnAnalyze.disabled = true;
+        
+        overlay.innerHTML = '<span>Dibuja de izquierda a derecha</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    btnAnalyze.addEventListener('click', async function() {
+        if (points.length < 5) {
+            alert('Dibuja más puntos');
+            return;
+        }
+        
+        btnAnalyze.disabled = true;
+        btnClear.disabled = true;
+        
+        // Show analyzing overlay
+        analyzingOverlay.classList.add('active');
+        
+        try {
+            const response = await fetch('/api/fit-curve/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ points: points })
+            });
+            
+            const data = await response.json();
+            
+            // Simulate minimum analysis time for visual effect
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            
+            // Hide analyzing overlay
+            analyzingOverlay.classList.remove('active');
+            
+            if (data.error) {
+                alert(data.error);
+                btnAnalyze.disabled = false;
+                btnClear.disabled = false;
+                return;
+            }
+            
+            // Store results
+            currentScore = data.score;
+            currentError = data.error;
+            fittedPoints = data.fitted_points;
+            coefficients = data.coefficients;
+            polynomialDegree = data.degree;
+            
+            // Update UI
+            document.getElementById('errorValue').textContent = (currentError * 100).toFixed(2) + '%';
+            document.getElementById('scoreValue').textContent = currentScore;
+            document.getElementById('degreeValue').textContent = polynomialDegree;
+            document.getElementById('functionDisplay').textContent = formatPolynomial(coefficients, polynomialDegree);
+            
+            // Draw result canvas
+            drawResultCanvas();
+            
+            // Show results panel
+            resultsPanel.style.display = 'block';
+            
+            // Make sure save form is visible
+            saveScoreForm.style.display = 'block';
+            saveScoreForm.querySelector('.form-group').style.display = 'flex';
+            document.getElementById('playerName').value = '';
+            document.getElementById('saveMessage').textContent = '';
+            btnSaveScore.disabled = false;
+            btnSaveScore.textContent = 'Guardar';
+            
+            gameStarted = false;
+            btnStart.disabled = false;
+            btnClear.disabled = true;
+            
+            // Scroll to results
+            resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+        } catch (err) {
+            console.error(err);
+            analyzingOverlay.classList.remove('active');
+            alert('Error al analizar la curva');
+            btnAnalyze.disabled = false;
+            btnClear.disabled = false;
+        }
+    });
+    
+    btnSaveScore.addEventListener('click', async function() {
+        const playerName = document.getElementById('playerName').value.trim();
+        const messageEl = document.getElementById('saveMessage');
+        
+        if (playerName.length < 2 || playerName.length > 20) {
+            messageEl.textContent = 'El nombre debe tener entre 2 y 20 caracteres';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(playerName)) {
+            messageEl.textContent = 'Solo letras, números y guiones bajos';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        btnSaveScore.disabled = true;
+        btnSaveScore.textContent = 'Guardando...';
+        
+        try {
+            const response = await fetch('/api/save-learn-score/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    player_name: playerName,
+                    score: currentScore,
+                    error: currentError
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                messageEl.textContent = data.error;
+                messageEl.className = 'form-message error';
+                btnSaveScore.disabled = false;
+                btnSaveScore.textContent = 'Guardar';
+                return;
+            }
+            
+            messageEl.textContent = '¡Puntuación guardada!';
+            messageEl.className = 'form-message success';
+            saveScoreForm.querySelector('.form-group').style.display = 'none';
+            
+        } catch (err) {
+            messageEl.textContent = 'Error al guardar';
+            messageEl.className = 'form-message error';
+            btnSaveScore.disabled = false;
+            btnSaveScore.textContent = 'Guardar';
+        }
+    });
+    
+    btnPlayAgain.addEventListener('click', function() {
+        points = [];
+        fittedPoints = [];
+        lastX = -1;
+        currentScore = 0;
+        currentError = 0;
+        coefficients = [];
+        polynomialDegree = 0;
+        gameStarted = false;
+        
+        resultsPanel.style.display = 'none';
+        saveScoreForm.style.display = 'block';
+        saveScoreForm.querySelector('.form-group').style.display = 'flex';
+        document.getElementById('playerName').value = '';
+        btnSaveScore.disabled = false;
+        btnSaveScore.textContent = 'Guardar';
+        
+        btnStart.disabled = false;
+        btnClear.disabled = true;
+        btnAnalyze.disabled = true;
+        
+        overlay.innerHTML = '<span>Click para empezar a dibujar</span>';
+        overlay.style.display = 'flex';
+        
+        redrawCanvas();
+    });
+    
+    // Initial setup
+    resizeCanvas();
+    resizeResultCanvas();
+})();
+</script>
+{% endblock %}

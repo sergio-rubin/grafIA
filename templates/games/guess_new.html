@@ -1,0 +1,710 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}grafIA Guess — Adivina la Función{% endblock %}
+
+{% block extra_css %}
+<style>
+    .preview-indicator {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        border-radius: var(--radius-md);
+        margin-top: 0.75rem;
+        font-size: 0.875rem;
+        color: #ffaa00;
+    }
+    
+    .preview-indicator .dot {
+        width: 12px;
+        height: 4px;
+        background: #ffaa00;
+        border-radius: 2px;
+        opacity: 0.7;
+    }
+    
+    .preview-indicator.error {
+        background: rgba(255, 107, 157, 0.1);
+        border-color: rgba(255, 107, 157, 0.3);
+        color: #ff6b9d;
+    }
+    
+    .preview-indicator.error .dot {
+        background: #ff6b9d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-container guess-game">
+    <div class="game-header">
+        <h1 class="game-title">grafIA <span class="accent">Guess</span></h1>
+        <p class="game-instructions">Observa la gráfica y escribe la función matemática que la genera.</p>
+    </div>
+    
+    <div class="game-area">
+        <div class="timer-display">
+            <span class="timer-icon">⏱️</span>
+            <span class="timer-value" id="timerValue">0.0s</span>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="graphCanvas" width="800" height="400"></canvas>
+            <div class="canvas-overlay start-overlay" id="startOverlay">
+                <span>Click en "Nueva Función" para comenzar</span>
+            </div>
+        </div>
+        
+        <div class="input-area">
+            <div class="function-input-group">
+                <span class="input-prefix">f(x) =</span>
+                <input type="text" id="functionInput" placeholder="Escribe la función aquí..." disabled>
+                <button class="btn btn-accent" id="btnCheck" disabled>Verificar</button>
+            </div>
+            <div class="input-hints">
+                <span class="hint">Ejemplos: 2*x + 1, x^2, sin(x), abs(x), cos(2*x)</span>
+            </div>
+            <div class="preview-indicator" id="previewIndicator" style="display: none;">
+                <span class="dot"></span>
+                <span id="previewText">Tu función se muestra en la gráfica</span>
+            </div>
+        </div>
+        
+        <div class="game-controls">
+            <button class="btn btn-primary" id="btnNewFunction">Nueva Función</button>
+        </div>
+    </div>
+    
+    <div class="results-panel" id="resultsPanel" style="display: none;">
+        <h2 class="results-title">Resultados</h2>
+        
+        <div class="function-reveal">
+            <div class="reveal-item">
+                <span class="reveal-label">Tu función:</span>
+                <span class="reveal-value user" id="userFunctionDisplay">-</span>
+            </div>
+            <div class="reveal-item">
+                <span class="reveal-label">Función real:</span>
+                <span class="reveal-value real" id="realFunctionDisplay">-</span>
+            </div>
+        </div>
+        
+        <div class="comparison-canvas-container">
+            <canvas id="comparisonCanvas" width="800" height="300"></canvas>
+            <div class="legend">
+                <span class="legend-item real"><span class="dot"></span> Función real</span>
+                <span class="legend-item user"><span class="dot"></span> Tu función</span>
+            </div>
+        </div>
+        
+        <div class="stats-row">
+            <div class="stat">
+                <span class="stat-value" id="timeValue">-</span>
+                <span class="stat-label">Tiempo</span>
+            </div>
+            <div class="stat">
+                <span class="stat-value" id="precisionValue">-</span>
+                <span class="stat-label">Precisión</span>
+            </div>
+            <div class="stat highlight">
+                <span class="stat-value" id="scoreValue">-</span>
+                <span class="stat-label">Score</span>
+            </div>
+        </div>
+        
+        <div class="save-score-form" id="saveScoreForm">
+            <h3>Guardar tu puntuación</h3>
+            <div class="form-group">
+                <input type="text" id="playerName" placeholder="Tu nombre (2-20 caracteres)" maxlength="20" pattern="[a-zA-Z0-9_]+">
+                <button class="btn btn-primary" id="btnSaveScore">Guardar</button>
+            </div>
+            <p class="form-hint">Solo letras, números y guiones bajos</p>
+            <p class="form-message" id="saveMessage"></p>
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-secondary" id="btnPlayAgain">Jugar de nuevo</button>
+            <a href="{% url 'games:leaderboard_guess' %}" class="btn btn-outline">Ver Ranking</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // Canvas setup
+    const graphCanvas = document.getElementById('graphCanvas');
+    const graphCtx = graphCanvas.getContext('2d');
+    const compCanvas = document.getElementById('comparisonCanvas');
+    const compCtx = compCanvas.getContext('2d');
+    
+    // Elements
+    const startOverlay = document.getElementById('startOverlay');
+    const functionInput = document.getElementById('functionInput');
+    const timerValue = document.getElementById('timerValue');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const saveScoreForm = document.getElementById('saveScoreForm');
+    const previewIndicator = document.getElementById('previewIndicator');
+    const previewText = document.getElementById('previewText');
+    
+    // Buttons
+    const btnNewFunction = document.getElementById('btnNewFunction');
+    const btnCheck = document.getElementById('btnCheck');
+    const btnSaveScore = document.getElementById('btnSaveScore');
+    const btnPlayAgain = document.getElementById('btnPlayAgain');
+    
+    // State
+    let currentFunction = null;
+    let realPoints = [];
+    let realFormula = '';
+    let timerInterval = null;
+    let startTime = 0;
+    let elapsedTime = 0;
+    let gameActive = false;
+    let currentScore = 0;
+    let currentPrecision = 0;
+    let previewPoints = [];
+    let previewDebounce = null;
+    
+    // Safe math functions for evaluation
+    const safeMath = {
+        sin: Math.sin,
+        cos: Math.cos,
+        tan: Math.tan,
+        abs: Math.abs,
+        log: Math.log,
+        sqrt: Math.sqrt,
+        exp: Math.exp,
+        pi: Math.PI,
+        e: Math.E,
+        pow: Math.pow,
+    };
+    
+    // Resize canvases
+    function resizeCanvases() {
+        const containers = document.querySelectorAll('.canvas-container, .comparison-canvas-container');
+        
+        containers.forEach(container => {
+            const canvas = container.querySelector('canvas');
+            if (!canvas) return;
+            
+            const rect = container.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            
+            const height = canvas.id === 'comparisonCanvas' ? 300 : 400;
+            
+            canvas.width = rect.width * dpr;
+            canvas.height = Math.min(height, rect.width * 0.5) * dpr;
+            
+            canvas.style.width = rect.width + 'px';
+            canvas.style.height = Math.min(height, rect.width * 0.5) + 'px';
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(dpr, dpr);
+        });
+        
+        if (realPoints.length > 0) {
+            drawGraph(graphCtx, graphCanvas, realPoints, '#00ffaa', previewPoints, '#ffaa00');
+        }
+    }
+    
+    // Draw coordinate system and graph with improved grid
+    function drawGraph(ctx, canvas, points, color, secondaryPoints = null, secondaryColor = '#ff6b9d') {
+        const dpr = window.devicePixelRatio || 1;
+        const width = canvas.width / dpr;
+        const height = canvas.height / dpr;
+        
+        // Background
+        ctx.fillStyle = '#0a0a1a';
+        ctx.fillRect(0, 0, width, height);
+        
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const scaleX = width / 10; // -5 to 5
+        const scaleY = height / 10;
+        
+        // Draw grid with numbers
+        ctx.strokeStyle = 'rgba(100, 200, 255, 0.15)';
+        ctx.lineWidth = 1;
+        
+        // Vertical grid lines and X labels
+        for (let i = -5; i <= 5; i++) {
+            const x = centerX + i * scaleX;
+            
+            // Grid line
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, height);
+            ctx.stroke();
+            
+            // Number label (skip 0)
+            if (i !== 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '12px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText(i.toString(), x, centerY + 18);
+            }
+        }
+        
+        // Horizontal grid lines and Y labels
+        for (let i = -5; i <= 5; i++) {
+            const y = centerY - i * scaleY;
+            
+            // Grid line
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+            
+            // Number label (skip 0)
+            if (i !== 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                ctx.font = '12px monospace';
+                ctx.textAlign = 'right';
+                ctx.fillText(i.toString(), centerX - 8, y + 4);
+            }
+        }
+        
+        // Axes (thicker)
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+        ctx.lineWidth = 2;
+        
+        // X axis
+        ctx.beginPath();
+        ctx.moveTo(0, centerY);
+        ctx.lineTo(width, centerY);
+        ctx.stroke();
+        
+        // Y axis
+        ctx.beginPath();
+        ctx.moveTo(centerX, 0);
+        ctx.lineTo(centerX, height);
+        ctx.stroke();
+        
+        // Axis arrows
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+        
+        // X arrow
+        ctx.beginPath();
+        ctx.moveTo(width - 10, centerY - 5);
+        ctx.lineTo(width, centerY);
+        ctx.lineTo(width - 10, centerY + 5);
+        ctx.fill();
+        
+        // Y arrow
+        ctx.beginPath();
+        ctx.moveTo(centerX - 5, 10);
+        ctx.lineTo(centerX, 0);
+        ctx.lineTo(centerX + 5, 10);
+        ctx.fill();
+        
+        // Axis labels
+        ctx.font = '14px monospace';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+        ctx.textAlign = 'left';
+        ctx.fillText('x', width - 20, centerY - 10);
+        ctx.fillText('y', centerX + 10, 15);
+        ctx.fillText('0', centerX + 5, centerY + 18);
+        
+        // Scale points to canvas
+        function scalePoint(p) {
+            return {
+                x: centerX + p.x * scaleX,
+                y: centerY - p.y * scaleY
+            };
+        }
+        
+        // Draw secondary/preview points first (if exists) with transparency
+        if (secondaryPoints && secondaryPoints.length > 1) {
+            ctx.strokeStyle = secondaryColor;
+            ctx.lineWidth = 2.5;
+            ctx.globalAlpha = 0.6;
+            ctx.beginPath();
+            
+            let started = false;
+            for (let i = 0; i < secondaryPoints.length; i++) {
+                const sp = scalePoint(secondaryPoints[i]);
+                if (sp.y > -50 && sp.y < height + 50 && sp.x >= 0 && sp.x <= width) {
+                    if (!started) {
+                        ctx.moveTo(sp.x, sp.y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(sp.x, sp.y);
+                    }
+                } else {
+                    started = false;
+                }
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+        }
+        
+        // Draw main curve
+        if (points.length > 1) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            
+            let started = false;
+            for (let i = 0; i < points.length; i++) {
+                const sp = scalePoint(points[i]);
+                if (sp.y > -50 && sp.y < height + 50 && sp.x >= 0 && sp.x <= width) {
+                    if (!started) {
+                        ctx.moveTo(sp.x, sp.y);
+                        started = true;
+                    } else {
+                        ctx.lineTo(sp.x, sp.y);
+                    }
+                } else {
+                    started = false;
+                }
+            }
+            ctx.stroke();
+        }
+    }
+    
+    // Evaluate user function and generate preview points
+    function evaluateUserFunction(funcStr) {
+        if (!funcStr || funcStr.trim() === '') {
+            return { points: [], valid: false, error: null };
+        }
+        
+        let processedFunc = funcStr.toLowerCase()
+            .replace(/\^/g, '**')
+            .replace(/sen/g, 'sin')
+            .replace(/\|x\|/g, 'abs(x)');
+        
+        const points = [];
+        const xValues = [];
+        
+        // Generate x values
+        for (let x = -5; x <= 5; x += 0.1) {
+            xValues.push(parseFloat(x.toFixed(2)));
+        }
+        
+        let validCount = 0;
+        
+        for (const x of xValues) {
+            try {
+                const y = eval(`(function() { 
+                    const x = ${x};
+                    const sin = Math.sin;
+                    const cos = Math.cos;
+                    const tan = Math.tan;
+                    const abs = Math.abs;
+                    const log = Math.log;
+                    const sqrt = Math.sqrt;
+                    const exp = Math.exp;
+                    const pi = Math.PI;
+                    const e = Math.E;
+                    const pow = Math.pow;
+                    return ${processedFunc};
+                })()`);
+                
+                if (!isNaN(y) && isFinite(y) && Math.abs(y) < 20) {
+                    points.push({ x: x, y: y });
+                    validCount++;
+                }
+            } catch (e) {
+                // Skip invalid evaluations
+            }
+        }
+        
+        return {
+            points: points,
+            valid: validCount > 10,
+            error: validCount <= 10 ? 'Función inválida' : null
+        };
+    }
+    
+    // Update preview
+    function updatePreview() {
+        const funcStr = functionInput.value.trim();
+        
+        if (!funcStr) {
+            previewPoints = [];
+            previewIndicator.style.display = 'none';
+            drawGraph(graphCtx, graphCanvas, realPoints, '#00ffaa');
+            return;
+        }
+        
+        const result = evaluateUserFunction(funcStr);
+        previewPoints = result.points;
+        
+        if (result.valid) {
+            previewIndicator.style.display = 'flex';
+            previewIndicator.className = 'preview-indicator';
+            previewText.textContent = 'Previsualización activa (naranja)';
+        } else {
+            previewIndicator.style.display = 'flex';
+            previewIndicator.className = 'preview-indicator error';
+            previewText.textContent = 'Función no válida - revisa la sintaxis';
+        }
+        
+        // Redraw with preview
+        drawGraph(graphCtx, graphCanvas, realPoints, '#00ffaa', previewPoints, '#ffaa00');
+    }
+    
+    // Timer functions
+    function startTimer() {
+        startTime = Date.now();
+        elapsedTime = 0;
+        
+        timerInterval = setInterval(() => {
+            elapsedTime = (Date.now() - startTime) / 1000;
+            timerValue.textContent = elapsedTime.toFixed(1) + 's';
+        }, 100);
+    }
+    
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+        return elapsedTime;
+    }
+    
+    // Generate new function
+    async function generateNewFunction() {
+        try {
+            const response = await fetch('/api/generate-function/');
+            const data = await response.json();
+            
+            if (!data.success) {
+                alert('Error al generar función');
+                return;
+            }
+            
+            currentFunction = data;
+            realPoints = data.points;
+            realFormula = data.formula;
+            previewPoints = [];
+            
+            // Draw the graph
+            drawGraph(graphCtx, graphCanvas, realPoints, '#00ffaa');
+            
+            // Start the game
+            startOverlay.style.display = 'none';
+            functionInput.disabled = false;
+            functionInput.value = '';
+            functionInput.focus();
+            btnCheck.disabled = false;
+            btnNewFunction.disabled = true;
+            gameActive = true;
+            
+            previewIndicator.style.display = 'none';
+            resultsPanel.style.display = 'none';
+            
+            startTimer();
+            
+        } catch (err) {
+            console.error(err);
+            alert('Error de conexión');
+        }
+    }
+    
+    // Check user's answer
+    async function checkFunction() {
+        if (!gameActive) return;
+        
+        const userFunction = functionInput.value.trim();
+        
+        if (!userFunction) {
+            alert('Ingresa una función');
+            return;
+        }
+        
+        const finalTime = stopTimer();
+        gameActive = false;
+        
+        btnCheck.disabled = true;
+        btnCheck.textContent = 'Verificando...';
+        previewIndicator.style.display = 'none';
+        
+        try {
+            const response = await fetch('/api/compare-function/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    user_function: userFunction,
+                    real_points: realPoints,
+                    time_seconds: finalTime
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (!data.success && data.error) {
+                alert(data.error);
+                gameActive = true;
+                startTimer();
+                btnCheck.disabled = false;
+                btnCheck.textContent = 'Verificar';
+                return;
+            }
+            
+            // Store results
+            currentScore = data.score;
+            currentPrecision = data.precision;
+            
+            // Update UI
+            document.getElementById('userFunctionDisplay').textContent = userFunction;
+            document.getElementById('realFunctionDisplay').textContent = realFormula;
+            document.getElementById('timeValue').textContent = finalTime.toFixed(1) + 's';
+            document.getElementById('precisionValue').textContent = (currentPrecision * 100).toFixed(1) + '%';
+            document.getElementById('scoreValue').textContent = currentScore;
+            
+            // Draw comparison
+            drawGraph(compCtx, compCanvas, realPoints, '#00ffaa', data.user_points, '#ff6b9d');
+            
+            // Show results
+            resultsPanel.style.display = 'block';
+            saveScoreForm.style.display = 'block';
+            saveScoreForm.querySelector('.form-group').style.display = 'flex';
+            document.getElementById('playerName').value = '';
+            document.getElementById('saveMessage').textContent = '';
+            btnSaveScore.disabled = false;
+            btnSaveScore.textContent = 'Guardar';
+            
+            functionInput.disabled = true;
+            btnNewFunction.disabled = false;
+            btnCheck.textContent = 'Verificar';
+            
+            resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+        } catch (err) {
+            console.error(err);
+            alert('Error al verificar');
+            btnCheck.disabled = false;
+            btnCheck.textContent = 'Verificar';
+        }
+    }
+    
+    // Event listeners
+    btnNewFunction.addEventListener('click', generateNewFunction);
+    btnCheck.addEventListener('click', checkFunction);
+    
+    functionInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            checkFunction();
+        }
+    });
+    
+    // Live preview on input
+    functionInput.addEventListener('input', function() {
+        if (!gameActive) return;
+        
+        // Debounce preview update
+        if (previewDebounce) {
+            clearTimeout(previewDebounce);
+        }
+        
+        previewDebounce = setTimeout(updatePreview, 200);
+    });
+    
+    btnSaveScore.addEventListener('click', async function() {
+        const playerName = document.getElementById('playerName').value.trim();
+        const messageEl = document.getElementById('saveMessage');
+        
+        if (playerName.length < 2 || playerName.length > 20) {
+            messageEl.textContent = 'El nombre debe tener entre 2 y 20 caracteres';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        if (!/^[a-zA-Z0-9_]+$/.test(playerName)) {
+            messageEl.textContent = 'Solo letras, números y guiones bajos';
+            messageEl.className = 'form-message error';
+            return;
+        }
+        
+        btnSaveScore.disabled = true;
+        btnSaveScore.textContent = 'Guardando...';
+        
+        try {
+            const response = await fetch('/api/save-guess-score/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    player_name: playerName,
+                    score: currentScore,
+                    time_seconds: elapsedTime,
+                    precision: currentPrecision
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                messageEl.textContent = data.error;
+                messageEl.className = 'form-message error';
+                btnSaveScore.disabled = false;
+                btnSaveScore.textContent = 'Guardar';
+                return;
+            }
+            
+            messageEl.textContent = '¡Puntuación guardada!';
+            messageEl.className = 'form-message success';
+            saveScoreForm.querySelector('.form-group').style.display = 'none';
+            
+        } catch (err) {
+            messageEl.textContent = 'Error al guardar';
+            messageEl.className = 'form-message error';
+            btnSaveScore.disabled = false;
+            btnSaveScore.textContent = 'Guardar';
+        }
+    });
+    
+    btnPlayAgain.addEventListener('click', function() {
+        currentFunction = null;
+        realPoints = [];
+        realFormula = '';
+        currentScore = 0;
+        currentPrecision = 0;
+        elapsedTime = 0;
+        gameActive = false;
+        previewPoints = [];
+        
+        stopTimer();
+        timerValue.textContent = '0.0s';
+        
+        resultsPanel.style.display = 'none';
+        saveScoreForm.style.display = 'block';
+        saveScoreForm.querySelector('.form-group').style.display = 'flex';
+        document.getElementById('playerName').value = '';
+        btnSaveScore.disabled = false;
+        btnSaveScore.textContent = 'Guardar';
+        
+        functionInput.value = '';
+        functionInput.disabled = true;
+        btnCheck.disabled = true;
+        btnNewFunction.disabled = false;
+        previewIndicator.style.display = 'none';
+        
+        const dpr = window.devicePixelRatio || 1;
+        const width = graphCanvas.width / dpr;
+        const height = graphCanvas.height / dpr;
+        graphCtx.fillStyle = '#0a0a1a';
+        graphCtx.fillRect(0, 0, width, height);
+        
+        startOverlay.style.display = 'flex';
+    });
+    
+    window.addEventListener('resize', resizeCanvases);
+    
+    // Initial setup
+    resizeCanvases();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}grafIA{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-container">
+        <header class="header">
+            <a href="{% url 'games:landing' %}" class="logo">
+                <span class="logo-graf">graf</span><span class="logo-ia">IA</span>
+            </a>
+            <nav class="nav">
+                <a href="{% url 'games:learn' %}" class="nav-link">Learn</a>
+                <a href="{% url 'games:guess' %}" class="nav-link">Guess</a>
+                <a href="{% url 'games:leaderboard_learn' %}" class="nav-link">Ranking</a>
+            </nav>
+        </header>
+        
+        <main class="main-content">
+            {% block content %}{% endblock %}
+        </main>
+        
+        <footer class="footer">
+            <p>grafIA 2026</p>
+        </footer>
+    </div>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

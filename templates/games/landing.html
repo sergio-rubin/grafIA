@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}grafIA — Math Games{% endblock %}
+
+{% block content %}
+<div class="landing">
+    <div class="hero">
+        <h1 class="hero-title">
+            <span class="title-graf">graf</span><span class="title-ia">IA</span>
+        </h1>
+        <p class="hero-subtitle">Donde las matemáticas se encuentran con la inteligencia artificial</p>
+        <div class="hero-decoration">
+            <svg class="wave-svg" viewBox="0 0 400 100" preserveAspectRatio="none">
+                <path class="wave-path" d="M0,50 Q50,20 100,50 T200,50 T300,50 T400,50" fill="none" stroke="currentColor" stroke-width="2"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="game-modes">
+        <h2 class="section-title">Selecciona un modo</h2>
+        
+        <div class="mode-cards">
+            <a href="{% url 'games:learn' %}" class="mode-card mode-learn">
+                <div class="mode-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19l7-7 3 3-7 7-3-3z"/>
+                        <path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/>
+                        <path d="M2 2l7.586 7.586"/>
+                        <circle cx="11" cy="11" r="2"/>
+                    </svg>
+                </div>
+                <h3 class="mode-title">grafIA Learn</h3>
+                <p class="mode-description">Dibuja una curva y observa cómo la IA aprende a replicarla</p>
+                <div class="mode-features">
+                    <span class="feature">Canvas interactivo</span>
+                    <span class="feature">Regresión poliomial</span>
+                    <span class="feature">Score basado en precisión</span>
+                </div>
+                <span class="mode-cta">Jugar ahora</span>
+            </a>
+            
+            <a href="{% url 'games:guess' %}" class="mode-card mode-guess">
+                <div class="mode-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                        <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    </svg>
+                </div>
+                <h3 class="mode-title">grafIA Guess</h3>
+                <p class="mode-description">Observa la gráfica y adivina la función matemática</p>
+                <div class="mode-features">
+                    <span class="feature">Funciones aleatorias</span>
+                    <span class="feature">Cronómetro</span>
+                    <span class="feature">Score por precisión y tiempo</span>
+                </div>
+                <span class="mode-cta">Jugar ahora</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="leaderboard-preview">
+        <h2 class="section-title">Rankings</h2>
+        <div class="leaderboard-links">
+            <a href="{% url 'games:leaderboard_learn' %}" class="leaderboard-link">
+                <span class="lb-icon">🎨</span>
+                <span class="lb-text">Top 10 — grafIA Learn</span>
+            </a>
+            <a href="{% url 'games:leaderboard_guess' %}" class="leaderboard-link">
+                <span class="lb-icon">🧠</span>
+                <span class="lb-text">Top 10 — grafIA Guess</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
