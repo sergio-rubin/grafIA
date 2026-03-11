@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}grafIA Learn — Dibuja y Aprende{% endblock %}
+{% block title %}grafIA Learn {% endblock %}
 
 {% block extra_css %}
 <style>
@@ -336,7 +336,7 @@
 {% block content %}
 <div class="game-container learn-game">
     <div class="game-header">
-        <h1 class="game-title">grafIA <span class="accent">Learn</span></h1>
+        <h1 class="game-title"><img src="{% static 'images/logo.png' %}" alt="grafIA" class="game-title-logo"> <span class="accent">Learn</span></h1>
         <p class="game-instructions">Dibuja una curva en el plano cartesiano. La IA aprenderá la función.</p>
     </div>
     

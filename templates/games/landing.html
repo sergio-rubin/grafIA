@@ -1,14 +1,14 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}grafIA — Math Games{% endblock %}
+{% block title %}grafIA{% endblock %}
 
 {% block content %}
 <div class="landing">
     <div class="hero">
-        <h1 class="hero-title">
-            <span class="title-graf">graf</span><span class="title-ia">IA</span>
-        </h1>
+        <div class="hero-title">
+            <img src="{% static 'images/logo.png' %}" alt="grafIA" class="hero-logo">
+        </div>
         <p class="hero-subtitle">Donde las matemáticas se encuentran con la inteligencia artificial</p>
         <div class="hero-decoration">
             <svg class="wave-svg" viewBox="0 0 400 100" preserveAspectRatio="none">
@@ -64,12 +64,10 @@
         <h2 class="section-title">Rankings</h2>
         <div class="leaderboard-links">
             <a href="{% url 'games:leaderboard_learn' %}" class="leaderboard-link">
-                <span class="lb-icon">🎨</span>
-                <span class="lb-text">Top 10 — grafIA Learn</span>
+                <span class="lb-text">Top 10 - grafIA Learn</span>
             </a>
             <a href="{% url 'games:leaderboard_guess' %}" class="leaderboard-link">
-                <span class="lb-icon">🧠</span>
-                <span class="lb-text">Top 10 — grafIA Guess</span>
+                <span class="lb-text">Top 10 - grafIA Guess</span>
             </a>
         </div>
     </div>

@@ -5,14 +5,36 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}grafIA{% endblock %}</title>
-    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    
+    <!-- Meta tags -->
+    <meta name="description" content="grafIA - Proyecto de la Feria de Matemáticas. Aprende y practica funciones matemáticas de forma interactiva con inteligencia artificial.">
+    <meta name="keywords" content="grafIA, matemáticas, funciones, gráficas, IA, feria de matemáticas, educación">
+    <meta name="author" content="grafIA - Feria de Matemáticas">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="grafIA - Feria de Matemáticas">
+    <meta property="og:description" content="Aprende y practica funciones matemáticas de forma interactiva con inteligencia artificial.">
+    <meta property="og:image" content="{% static 'images/banner-1x1.png' %}">
+    
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="grafIA - Feria de Matemáticas">
+    <meta name="twitter:description" content="Aprende y practica funciones matemáticas de forma interactiva con inteligencia artificial.">
+    <meta name="twitter:image" content="{% static 'images/banner-1x1.png' %}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    <link rel="shortcut icon" type="image/x-icon" href="{% static 'images/favicon.ico' %}">
+    
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}?v=2.0.0">
     {% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="app-container">
         <header class="header">
             <a href="{% url 'games:landing' %}" class="logo">
-                <span class="logo-graf">graf</span><span class="logo-ia">IA</span>
+                <img src="{% static 'images/logo.png' %}" alt="grafIA" class="logo-img">
             </a>
             <nav class="nav">
                 <a href="{% url 'games:learn' %}" class="nav-link">Learn</a>

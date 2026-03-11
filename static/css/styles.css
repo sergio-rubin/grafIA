@@ -72,6 +72,14 @@ body {
     text-decoration: none;
     font-size: 1.5rem;
     font-weight: 700;
+    display: flex;
+    align-items: center;
+}
+
+.logo-img {
+    height: 42px;
+    width: auto;
+    object-fit: contain;
 }
 
 .logo-graf {
@@ -132,6 +140,20 @@ body {
     font-size: 0.875rem;
 }
 
+.footer p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.footer-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
 /* ===== Landing Page ===== */
 .landing {
     display: flex;
@@ -148,8 +170,17 @@ body {
     font-size: clamp(3rem, 10vw, 6rem);
     font-weight: 800;
     margin-bottom: 1rem;
-    letter-spacing: -2px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
+
+.hero-logo {
+    max-width: min(80vw, 500px);
+    height: auto;
+    object-fit: contain;
+}
+
 
 .title-graf {
     color: var(--text-primary);
@@ -276,6 +307,16 @@ body {
     font-weight: 700;
     margin-bottom: 0.75rem;
     color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.mode-logo {
+    height: 28px;
+    width: auto;
+    object-fit: contain;
 }
 
 .mode-description {
@@ -352,6 +393,19 @@ body {
     font-size: 1.5rem;
 }
 
+.lb-text {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lb-logo {
+    height: 20px;
+    width: auto;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
 /* ===== Game Container ===== */
 .game-container {
     max-width: 900px;
@@ -367,6 +421,16 @@ body {
     font-size: 2rem;
     font-weight: 700;
     margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.game-title-logo {
+    height: 56px;
+    width: auto;
+    object-fit: contain;
 }
 
 .game-title .accent {

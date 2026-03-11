@@ -1,13 +1,21 @@
-from django.shortcuts import render
-from django.http import JsonResponse
+from django.shortcuts import render, redirect
+from django.http import JsonResponse, HttpResponseRedirect
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 import json
 import numpy as np
 import random
 import math
+import re
+import os
 
 from .models import LearnScore, GuessScore
+
+
+def favicon(request):
+    """Serve favicon.ico from static files"""
+    return HttpResponseRedirect(settings.STATIC_URL + 'images/favicon.ico')
 
 
 def landing(request):
@@ -288,11 +296,36 @@ def api_compare_function(request):
             'pow': pow,
         }
         
-        # Clean user function
-        user_func = user_function.lower()
+        # Normalize user function syntax
+        user_func = user_function.lower().strip()
+        
+        # Replace ^ with **
         user_func = user_func.replace('^', '**')
+        
+        # Replace sen with sin (Spanish)
         user_func = user_func.replace('sen', 'sin')
-        user_func = user_func.replace('|x|', 'abs(x)')
+        
+        # Handle |...| as abs(...)
+        user_func = re.sub(r'\|([^|]+)\|', r'abs(\1)', user_func)
+        
+        # Handle implicit multiplication: 2x → 2*x, 2sin → 2*sin, etc.
+        user_func = re.sub(r'(\d)x', r'\1*x', user_func)
+        user_func = re.sub(r'(\d)\(', r'\1*(', user_func)
+        user_func = re.sub(r'(\d)(sin|cos|tan|abs|log|sqrt|exp)', r'\1*\2', user_func)
+        user_func = re.sub(r'x\(', r'x*(', user_func)
+        user_func = re.sub(r'\)x', r')*x', user_func)
+        user_func = re.sub(r'\)(\d)', r')*\1', user_func)
+        user_func = re.sub(r'\)\(', r')*(', user_func)
+        user_func = re.sub(r'x(sin|cos|tan|abs|log|sqrt|exp)', r'x*\1', user_func)
+        user_func = re.sub(r'\)(sin|cos|tan|abs|log|sqrt|exp)', r')*\1', user_func)
+        
+        # Handle superscripts
+        user_func = user_func.replace('²', '**2')
+        user_func = user_func.replace('³', '**3')
+        
+        # Handle -x as -1*x at start or after operator
+        user_func = re.sub(r'^-x', r'-1*x', user_func)
+        user_func = re.sub(r'([+\-*/^(])-x', r'\1-1*x', user_func)
         
         # Evaluate user function at same x values
         errors = []

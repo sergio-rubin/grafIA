@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}grafIA Guess — Adivina la Función{% endblock %}
+{% block title %}grafIA Guess{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -41,13 +41,125 @@
         max-width: 600px;
         margin: 0 auto;
     }
+    
+    /* Virtual Keyboard Styles */
+    .function-keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: rgba(26, 26, 58, 0.8);
+        border: 1px solid rgba(100, 200, 255, 0.2);
+        border-radius: var(--radius-md);
+        max-width: 400px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .keyboard-row {
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+    }
+    
+    .kb-btn {
+        min-width: 48px;
+        height: 44px;
+        padding: 0.5rem;
+        border: 1px solid rgba(100, 200, 255, 0.3);
+        border-radius: var(--radius-sm);
+        background: rgba(10, 10, 26, 0.8);
+        color: var(--text-primary);
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .kb-btn:hover {
+        background: rgba(0, 255, 170, 0.15);
+        border-color: var(--accent-primary);
+        color: var(--accent-primary);
+    }
+    
+    .kb-btn:active {
+        transform: scale(0.95);
+        background: rgba(0, 255, 170, 0.25);
+    }
+    
+    .kb-btn.kb-fn {
+        min-width: 56px;
+        font-size: 0.9rem;
+        color: var(--accent-secondary);
+    }
+    
+    .kb-btn.kb-fn:hover {
+        color: var(--accent-secondary);
+        border-color: var(--accent-secondary);
+        background: rgba(0, 204, 255, 0.15);
+    }
+    
+    .kb-btn.num {
+        color: var(--text-secondary);
+    }
+    
+    .kb-btn.kb-del {
+        background: rgba(255, 107, 157, 0.1);
+        border-color: rgba(255, 107, 157, 0.3);
+        color: var(--accent-tertiary);
+    }
+    
+    .kb-btn.kb-del:hover {
+        background: rgba(255, 107, 157, 0.25);
+        border-color: var(--accent-tertiary);
+    }
+    
+    /* Responsive keyboard */
+    @media (max-width: 480px) {
+        .function-keyboard {
+            padding: 0.75rem;
+        }
+        
+        .keyboard-row {
+            gap: 0.25rem;
+        }
+        
+        .kb-btn {
+            min-width: 40px;
+            height: 40px;
+            font-size: 0.9rem;
+            padding: 0.4rem;
+        }
+        
+        .kb-btn.kb-fn {
+            min-width: 46px;
+            font-size: 0.8rem;
+        }
+    }
+    
+    @media (max-width: 360px) {
+        .kb-btn {
+            min-width: 36px;
+            height: 36px;
+            font-size: 0.85rem;
+        }
+        
+        .kb-btn.kb-fn {
+            min-width: 40px;
+            font-size: 0.75rem;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="game-container guess-game">
     <div class="game-header">
-        <h1 class="game-title">grafIA <span class="accent">Guess</span></h1>
+        <h1 class="game-title"><img src="{% static 'images/logo.png' %}" alt="grafIA" class="game-title-logo"> <span class="accent">Guess</span></h1>
         <p class="game-instructions">Observa la gráfica y escribe la función matemática que la genera.</p>
     </div>
     
@@ -71,8 +183,53 @@
                 <button class="btn btn-accent" id="btnCheck" disabled>Verificar</button>
             </div>
             <div class="input-hints">
-                <span class="hint">Ejemplos: 2*x + 1, x^2, sin(x), abs(x), cos(2*x)</span>
+                <span class="hint">Ejemplos: 2x + 1, x^2, sin(x), |x|, cos(2x)</span>
             </div>
+            
+            <!-- Teclado Virtual -->
+            <div class="function-keyboard" id="functionKeyboard">
+                <div class="keyboard-row">
+                    <button type="button" class="kb-btn" data-insert="x">x</button>
+                    <button type="button" class="kb-btn" data-insert="^">^</button>
+                    <button type="button" class="kb-btn" data-insert="2">²</button>
+                    <button type="button" class="kb-btn" data-insert="3">³</button>
+                    <button type="button" class="kb-btn" data-insert="(">(</button>
+                    <button type="button" class="kb-btn" data-insert=")">)</button>
+                </div>
+                <div class="keyboard-row">
+                    <button type="button" class="kb-btn" data-insert="+">+</button>
+                    <button type="button" class="kb-btn" data-insert="-">−</button>
+                    <button type="button" class="kb-btn" data-insert="*">×</button>
+                    <button type="button" class="kb-btn" data-insert="/">÷</button>
+                    <button type="button" class="kb-btn" data-insert="pi">π</button>
+                    <button type="button" class="kb-btn" data-insert="e">e</button>
+                </div>
+                <div class="keyboard-row">
+                    <button type="button" class="kb-btn kb-fn" data-insert="sin()">sin</button>
+                    <button type="button" class="kb-btn kb-fn" data-insert="cos()">cos</button>
+                    <button type="button" class="kb-btn kb-fn" data-insert="tan()">tan</button>
+                    <button type="button" class="kb-btn kb-fn" data-insert="||">|x|</button>
+                    <button type="button" class="kb-btn kb-fn" data-insert="sqrt()">√</button>
+                    <button type="button" class="kb-btn kb-fn" data-insert="log()">log</button>
+                </div>
+                <div class="keyboard-row">
+                    <button type="button" class="kb-btn num" data-insert="0">0</button>
+                    <button type="button" class="kb-btn num" data-insert="1">1</button>
+                    <button type="button" class="kb-btn num" data-insert="2">2</button>
+                    <button type="button" class="kb-btn num" data-insert="3">3</button>
+                    <button type="button" class="kb-btn num" data-insert="4">4</button>
+                    <button type="button" class="kb-btn num" data-insert="5">5</button>
+                </div>
+                <div class="keyboard-row">
+                    <button type="button" class="kb-btn num" data-insert="6">6</button>
+                    <button type="button" class="kb-btn num" data-insert="7">7</button>
+                    <button type="button" class="kb-btn num" data-insert="8">8</button>
+                    <button type="button" class="kb-btn num" data-insert="9">9</button>
+                    <button type="button" class="kb-btn" data-insert=".">.</button>
+                    <button type="button" class="kb-btn kb-del" data-action="backspace">⌫</button>
+                </div>
+            </div>
+            
             <div class="preview-indicator" id="previewIndicator" style="display: none;">
                 <span class="dot"></span>
                 <span id="previewText">Tu función se muestra en la gráfica</span>
@@ -377,16 +534,58 @@
         }
     }
     
+    // Normalize user function syntax to JavaScript math
+    function normalizeSyntax(funcStr) {
+        let f = funcStr.toLowerCase().trim();
+        
+        // Replace ^ with **
+        f = f.replace(/\^/g, '**');
+        
+        // Replace sen with sin (Spanish)
+        f = f.replace(/sen/g, 'sin');
+        
+        // Replace |...| with abs(...)
+        // Handle nested and simple cases: |x| → abs(x), |x+1| → abs(x+1)
+        f = f.replace(/\|([^|]+)\|/g, 'abs($1)');
+        
+        // Handle implicit multiplication: 2x → 2*x, 2sin → 2*sin, 2( → 2*(
+        // Number followed by x
+        f = f.replace(/(\d)x/g, '$1*x');
+        // Number followed by opening paren
+        f = f.replace(/(\d)\(/g, '$1*(');
+        // Number followed by function name
+        f = f.replace(/(\d)(sin|cos|tan|abs|log|sqrt|exp)/g, '$1*$2');
+        // x followed by opening paren (for cases like x(2) meaning x*2)
+        f = f.replace(/x\(/g, 'x*(');
+        // Closing paren followed by x
+        f = f.replace(/\)x/g, ')*x');
+        // Closing paren followed by number
+        f = f.replace(/\)(\d)/g, ')*$1');
+        // Closing paren followed by opening paren
+        f = f.replace(/\)\(/g, ')*(');
+        // x followed by function name
+        f = f.replace(/x(sin|cos|tan|abs|log|sqrt|exp)/g, 'x*$1');
+        // Closing paren followed by function name
+        f = f.replace(/\)(sin|cos|tan|abs|log|sqrt|exp)/g, ')*$1');
+        
+        // Handle x² and x³ superscripts (if typed)
+        f = f.replace(/²/g, '**2');
+        f = f.replace(/³/g, '**3');
+        
+        // Handle coefficient before -x: support -x as -1*x at start or after operator
+        f = f.replace(/^-x/g, '-1*x');
+        f = f.replace(/([+\-*/^(])-x/g, '$1-1*x');
+        
+        return f;
+    }
+    
     // Evaluate user function and generate preview points
     function evaluateUserFunction(funcStr) {
         if (!funcStr || funcStr.trim() === '') {
             return { points: [], valid: false, error: null };
         }
         
-        let processedFunc = funcStr.toLowerCase()
-            .replace(/\^/g, '**')
-            .replace(/sen/g, 'sin')
-            .replace(/\|x\|/g, 'abs(x)');
+        let processedFunc = normalizeSyntax(funcStr);
         
         const points = [];
         const xValues = [];
@@ -616,6 +815,57 @@
         }
         
         previewDebounce = setTimeout(updatePreview, 200);
+    });
+    
+    // Virtual Keyboard functionality
+    const keyboard = document.getElementById('functionKeyboard');
+    keyboard.addEventListener('click', function(e) {
+        const btn = e.target.closest('.kb-btn');
+        if (!btn || functionInput.disabled) return;
+        
+        const action = btn.dataset.action;
+        const insertValue = btn.dataset.insert;
+        
+        functionInput.focus();
+        const start = functionInput.selectionStart;
+        const end = functionInput.selectionEnd;
+        const currentValue = functionInput.value;
+        
+        if (action === 'backspace') {
+            // Delete character before cursor or selected text
+            if (start !== end) {
+                functionInput.value = currentValue.slice(0, start) + currentValue.slice(end);
+                functionInput.setSelectionRange(start, start);
+            } else if (start > 0) {
+                functionInput.value = currentValue.slice(0, start - 1) + currentValue.slice(start);
+                functionInput.setSelectionRange(start - 1, start - 1);
+            }
+        } else if (insertValue) {
+            // Insert the value at cursor position
+            let toInsert = insertValue;
+            let cursorOffset = toInsert.length;
+            
+            // For functions with parentheses, place cursor inside
+            if (toInsert.endsWith('()')) {
+                cursorOffset = toInsert.length - 1;
+            }
+            // For |x| pattern, insert |x| and select x
+            if (toInsert === '||') {
+                toInsert = '|x|';
+                cursorOffset = 2;
+            }
+            
+            functionInput.value = currentValue.slice(0, start) + toInsert + currentValue.slice(end);
+            functionInput.setSelectionRange(start + cursorOffset, start + cursorOffset);
+        }
+        
+        // Trigger preview update
+        if (gameActive) {
+            if (previewDebounce) {
+                clearTimeout(previewDebounce);
+            }
+            previewDebounce = setTimeout(updatePreview, 200);
+        }
     });
     
     btnSaveScore.addEventListener('click', async function() {
