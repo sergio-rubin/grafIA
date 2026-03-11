@@ -433,6 +433,7 @@ body {
 
 /* ===== Game Controls ===== */
 .game-controls {
+    margin-top: 1rem;
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
@@ -504,6 +505,7 @@ body {
 
 /* ===== Input Area (Guess Game) ===== */
 .input-area {
+    margin-top: 1rem;
     margin-bottom: 1.5rem;
 }
 

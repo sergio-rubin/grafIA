@@ -36,6 +36,11 @@
     .preview-indicator.error .dot {
         background: #ff6b9d;
     }
+    
+    .guess-game .canvas-container {
+        max-width: 600px;
+        margin: 0 auto;
+    }
 </style>
 {% endblock %}
 
@@ -53,7 +58,7 @@
         </div>
         
         <div class="canvas-container">
-            <canvas id="graphCanvas" width="800" height="400"></canvas>
+            <canvas id="graphCanvas" width="800" height="800"></canvas>
             <div class="canvas-overlay start-overlay" id="startOverlay">
                 <span>Click en "Nueva Función" para comenzar</span>
             </div>
@@ -196,13 +201,15 @@
             const rect = container.getBoundingClientRect();
             const dpr = window.devicePixelRatio || 1;
             
-            const height = canvas.id === 'comparisonCanvas' ? 300 : 400;
+            // Main graph canvas: 1:1 (square), comparison canvas: shorter
+            const isComparison = canvas.id === 'comparisonCanvas';
+            const size = isComparison ? Math.min(300, rect.width * 0.4) : Math.min(rect.width, 600);
             
-            canvas.width = rect.width * dpr;
-            canvas.height = Math.min(height, rect.width * 0.5) * dpr;
+            canvas.width = (isComparison ? rect.width : size) * dpr;
+            canvas.height = size * dpr;
             
-            canvas.style.width = rect.width + 'px';
-            canvas.style.height = Math.min(height, rect.width * 0.5) + 'px';
+            canvas.style.width = (isComparison ? rect.width : size) + 'px';
+            canvas.style.height = size + 'px';
             
             const ctx = canvas.getContext('2d');
             ctx.scale(dpr, dpr);

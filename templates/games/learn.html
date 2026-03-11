@@ -371,9 +371,8 @@
         <h2 class="results-title">¡Análisis Completado!</h2>
         
         <div class="function-result-box">
-            <span class="function-result-label">Función detectada por la IA (compatible con GeoGebra)</span>
+            <span class="function-result-label">Función detectada por la IA</span>
             <span class="function-result-value" id="functionDisplay">-</span>
-            <p class="geogebra-hint">Copia esta función y pégala en GeoGebra para verificar</p>
         </div>
         
         <div class="stats-row">
@@ -469,58 +468,6 @@
             <div class="degree-name">Superior</div>
             <div class="degree-example">ax⁴ + ax³ + ...</div>
         </div>
-    </div>
-    
-    <div class="visual-example">
-        <h3 class="visual-title">Así funciona paso a paso</h3>
-        <div class="visual-steps">
-            <div class="visual-step">
-                <div class="step-icon">✏️</div>
-                <div class="step-content">
-                    <h4>Dibujas una curva</h4>
-                    <p>Cada movimiento del mouse registra un punto (x, y) en coordenadas matemáticas reales del plano cartesiano (-5 a 5).</p>
-                </div>
-            </div>
-            <div class="visual-step">
-                <div class="step-icon">🔍</div>
-                <div class="step-content">
-                    <h4>Análisis de puntos</h4>
-                    <p>El algoritmo examina todos los puntos capturados y los prepara para el proceso de regresión.</p>
-                </div>
-            </div>
-            <div class="visual-step">
-                <div class="step-icon">🧮</div>
-                <div class="step-content">
-                    <h4>Regresión polinomial</h4>
-                    <p>Se prueban polinomios de grado 1 a 7. Para cada uno, se calculan los coeficientes óptimos usando mínimos cuadrados y se mide el error.</p>
-                </div>
-            </div>
-            <div class="visual-step">
-                <div class="step-icon">⚖️</div>
-                <div class="step-content">
-                    <h4>Selección del mejor modelo</h4>
-                    <p>Se elige el grado que mejor equilibra precisión y simplicidad (penalizando grados muy altos para evitar "overfitting").</p>
-                </div>
-            </div>
-            <div class="visual-step">
-                <div class="step-icon">📊</div>
-                <div class="step-content">
-                    <h4>Resultado final</h4>
-                    <p>La función encontrada se dibuja en rosa, se muestra la fórmula exacta (compatible con GeoGebra) y se calcula tu puntuación.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="key-concepts">
-        <h3>Conceptos Clave</h3>
-        <ul class="concept-list">
-            <li><strong>Mínimos Cuadrados:</strong> Método matemático que minimiza la suma de los cuadrados de las diferencias entre los puntos reales y los predichos por el modelo.</li>
-            <li><strong>Coeficiente R² (R-cuadrado):</strong> Indica qué porcentaje de la variación en tus datos es explicado por el modelo. Va de 0 a 1.</li>
-            <li><strong>Overfitting:</strong> Cuando un modelo es demasiado complejo y se ajusta al "ruido" en lugar del patrón real. Por eso penalizamos grados altos.</li>
-            <li><strong>Grado del polinomio:</strong> Determina la "complejidad" de la curva. Mayor grado = más curvas y ondulaciones posibles.</li>
-            <li><strong>NumPy polyfit:</strong> Función de Python que implementa la regresión polinomial usando álgebra lineal optimizada.</li>
-        </ul>
     </div>
 </div>
 {% endblock %}
